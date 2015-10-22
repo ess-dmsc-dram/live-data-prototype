@@ -8,10 +8,10 @@ class EventGenerator(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.event_data = deque()
-        self.rate = 100000000.0
+        self.rate = 1000000.0
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
-        self.chunk_size = 5000000
+        self.chunk_size = 50000
         self.scale = 1.0
         self.size = 5000
         self.generator_data = None

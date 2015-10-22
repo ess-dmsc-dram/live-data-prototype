@@ -27,10 +27,10 @@ class EventListener(threading.Thread):
         self.connect()
         while True:
             self.get_data_from_stream()
+            self.distribute_stream()
+            self.process_data()
+            self.gather_data()
             self.replace_result()
-            #self.distribute_stream()
-            #self.modify_data()
-            #self.gather_data()
             #self.append_to_result()
 
     def connect(self):
@@ -64,28 +64,35 @@ class EventListener(threading.Thread):
             event_count = self.data['event_count']
             self.data = self.socket.recv()
             self.data = numpy.frombuffer(self.data, numpy.float64).reshape((event_count, 2))
-            self.mantid_data = mantid_reduction.reduce(self.data)
-            self.mantid_data = numpy.concatenate((self.mantid_data[0], self.mantid_data[1]))
-            #print self.mantid_data
-            #self.data = self.data.transpose()[1]
         else:
             self.data = None
 
     def distribute_stream(self):
         if comm.Get_rank() == 0:
-            split = numpy.array_split(self.data, comm.size)
+            split = []
+            for i in range(comm.size):
+                split.append([])
+            for i in self.data:
+                detector_id = int(i[0])
+                target = detector_id % comm.size
+                split[target].append(i)
         else:
             split = None
-        tmp2 = comm.scatter(split, root=0)
-        self.data = numpy.frombuffer(tmp2, numpy.float64)
+        self.data = comm.scatter(split, root=0)
 
-    def modify_data(self):
-        self.data = numpy.add(self.data, 10.0 * comm.Get_rank())
+    def process_data(self):
+        # readX, readY
+        self.mantid_data = mantid_reduction.reduce(self.data)
+        #self.mantid_data = numpy.concatenate((self.mantid_data[0], self.mantid_data[1]))
 
     def gather_data(self):
-        rawdata = comm.gather(self.data, root=0)
+        rawdata = comm.gather(self.mantid_data[1], root=0)
         if comm.Get_rank() == 0:
-            self.data = numpy.concatenate([numpy.frombuffer(rawdata[i], numpy.float64) for i in range(comm.size)])
+            for i in range(1, len(rawdata)):
+                rawdata[0] = numpy.add(rawdata[0], rawdata[i])
+            self.mantid_data = [self.mantid_data[0], rawdata[0]]
+            #self.mantid_data = numpy.concatenate((self.mantid_data[0], rawdata[0]))
+            #self.mantid_data = numpy.concatenate([numpy.frombuffer(rawdata[i], numpy.float64) for i in range(comm.size)])
 
     def append_to_result(self):
         if comm.Get_rank() == 0:
@@ -99,7 +106,11 @@ class EventListener(threading.Thread):
     def replace_result(self):
         if comm.Get_rank() == 0:
             self.resultLock.acquire()
-            self.result = self.mantid_data
+            if self.result == None:
+                self.result = [ numpy.array(x, copy=True) for x in self.mantid_data ]
+            else:
+                self.result[1] += self.mantid_data[1]
+                #self.result[1] = numpy.add(self.result[1], self.mantid_data[1])
             self.resultLock.release()
 
 
@@ -122,10 +133,10 @@ class ResultPublisher(threading.Thread):
                 self.eventListener.resultLock.release()
                 time.sleep(1)
                 self.eventListener.resultLock.acquire()
-            #print self.eventListener.result.size
-            self.socket.send(self.eventListener.result)
+            packet = numpy.concatenate((self.eventListener.result[0], self.eventListener.result[1]))
+            self.socket.send(packet)
             # TODO is it safe to clear/release here? When is zmq done using the buffer?
-            self.eventListener.result = None
+            #self.eventListener.result = None
             self.eventListener.resultLock.release()
             time.sleep(self.update_rate)
 
