@@ -41,8 +41,6 @@ class EventListener(threading.Thread):
             self.socket.connect(uri)
             print 'Connected to event streamer at ' + uri
 
-    #def get_and_verify_stream_info(self):
-
     def request_header(self):
         packet = {
                 'version':self.version,
@@ -104,44 +102,6 @@ class EventListener(threading.Thread):
             self.result = self.mantid_data
             self.resultLock.release()
 
-class ResultStreamer(threading.Thread):
-    def __init__(self, eventListener):
-        if comm.Get_rank() != 0:
-            raise Exception('ResultStream can run only on rank 0')
-        threading.Thread.__init__(self)
-        self.eventListener = eventListener
-
-    def run(self):
-        print "Starting ResultStreamer"
-        context = zmq.Context()
-        socket = context.socket(zmq.REP)
-        socket.bind("tcp://*:{0:d}".format(ports.result_stream))
-
-        while 1:
-            command = socket.recv()
-            if command == 'h':
-                print 'Client requested header'
-                eventListener.resultLock.acquire()
-                while eventListener.result == None:
-                    eventListener.resultLock.release()
-                    time.sleep(1)
-                    eventListener.resultLock.acquire()
-                socket.send_json(eventListener.result.itemsize)
-                eventListener.resultLock.release()
-            elif command == 'd':
-                print 'Client requested data'
-                eventListener.resultLock.acquire()
-                while eventListener.result == None:
-                    eventListener.resultLock.release()
-                    time.sleep(1)
-                    eventListener.resultLock.acquire()
-                print eventListener.result.size
-                socket.send(eventListener.result)
-                # TODO is it safe to clear/release here? When is zmq done using the buffer?
-                eventListener.result = None
-                eventListener.resultLock.release()
-            else:
-                print 'Unknown command ' + command
 
 class ResultPublisher(threading.Thread):
     def __init__(self, eventListener):
@@ -188,10 +148,7 @@ eventListener = EventListener()
 eventListener.start()
 
 if comm.Get_rank() == 0:
-    #resultStreamer = ResultStreamer(eventListener)
-    #resultStreamer.start()
     resultPublisher = ResultPublisher(eventListener)
     resultPublisher.start()
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
     parameterController.start()
-

@@ -46,9 +46,6 @@ class FakeEventStreamer(threading.Thread):
         self.socket.send_json(header, flags=zmq.SNDMORE)
         self.socket.send(event_data)
 
-    #def get_parameter_dict(self):
-    #    return {'scale':(self.set_scale, 'float'), 'size':(self.set_size, 'int')}
-
     def run(self):
         print 'Starting FakeEventStreamer...'
         self.connect()
