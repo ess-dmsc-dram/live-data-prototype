@@ -6,6 +6,10 @@ import ports
 from parameter_control_server import ParameterControlServer
 from event_generator import EventGenerator
 
+from distribution_file_based_event_generator import DistributionFileBasedEventGenerator
+from bragg_peak_event_generator import create_BraggEventGenerator
+from bragg_peak_event_generator import CrystalStructure
+
 
 class FakeEventStreamer(threading.Thread):
     def __init__(self, eventGenerator, version=1):
@@ -60,8 +64,10 @@ class FakeEventStreamer(threading.Thread):
             else:
                 print 'Unknown command ' + command
 
+baseGenerator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
+#baseGenerator = DistributionFileBasedEventGenerator('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
 
-eventGenerator = EventGenerator()
+eventGenerator = EventGenerator(baseGenerator)
 eventGenerator.start()
 
 streamer = FakeEventStreamer(eventGenerator)

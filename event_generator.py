@@ -5,7 +5,7 @@ import numpy
 
 
 class EventGenerator(threading.Thread):
-    def __init__(self):
+    def __init__(self, generator):
         threading.Thread.__init__(self)
         self.daemon = True
         self.event_data = deque()
@@ -15,11 +15,10 @@ class EventGenerator(threading.Thread):
         self.chunk_size = 50000
         self.scale = 1.0
         self.size = 5000
-        self.generator_data = None
+        self.generator = generator
 
     def run(self):
         print 'Starting EventGenerator...'
-        self.load_event_data()
         self.init_sleep_time()
         while True:
             self.generate_events()
@@ -27,11 +26,7 @@ class EventGenerator(threading.Thread):
             self.update_sleep_time()
 
     def generate_events(self):
-        events = numpy.ndarray(shape=(self.chunk_size), dtype=self.get_type_info())
-        indices = numpy.random.random_integers(0, len(self.generator_data)-1, self.chunk_size)
-        for i in range(self.chunk_size):
-            events[i] = self.generator_data[indices[i]]
-        self.event_data.append(events)
+        self.event_data.append(self.generator.get_events(self.chunk_size))
 
     def get_events(self):
         while True:
@@ -60,10 +55,6 @@ class EventGenerator(threading.Thread):
             else:
                 self.sleep_time = self.sleep_time * 1.01
         self.end_old = self.end_new
-
-    def load_event_data(self):
-        print 'Loading event distribution...'
-        self.generator_data = numpy.load('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
 
     def get_parameter_dict(self):
         return {'rate':(self.set_rate, 'float'), 'chunk_size':(self.set_chunk_size, 'int'), 'scale':(self.set_scale, 'float'), 'size':(self.set_size, 'int')}
