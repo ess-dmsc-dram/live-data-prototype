@@ -18,7 +18,7 @@ def reduce(event_data):
     ws.getAxis(0).setUnit('tof')
     ws.setStorageMode(StorageMode.Distributed)
     for i in event_data:
-        ws.getEventList(int(i[0])).addEventQuickly(i[1])
+        ws.getEventList(int(i[0])).addEventQuickly(float(i[1]))
     print ws.getNumberHistograms()
     print ws.getNumberEvents()
     mantid.ConvertUnits(InputWorkspace='POWDIFF_test', OutputWorkspace='pd_dspacing', Target='dSpacing')

@@ -28,6 +28,7 @@ class EventListener(threading.Thread):
     def run(self):
         print 'Starting EventListener...'
         self.connect()
+        self.get_stream_info()
         while True:
             data = self.get_data_from_stream()
             split_data = self.distribute_stream(data)
@@ -43,21 +44,11 @@ class EventListener(threading.Thread):
             self.socket.connect(uri)
             print 'Connected to event streamer at ' + uri
 
-    def request_header(self):
-        packet = {
-                'version':self.version,
-                'request_type':'parameters',
-                'payload':None
-                }
-        self.socket.send('h')
-        itemsize = self.socket.recv_json()
-
-        if itemsize == 4:
-            datatype = numpy.float32
-        else:
-            datatype = numpy.float64
-
-        return datatype
+    def get_stream_info(self):
+        if comm.Get_rank() == 0:
+            self.socket.send('h')
+            info = self.socket.recv_json()
+            self.record_type = info['record_type']
 
     def get_data_from_stream(self):
         if comm.Get_rank() == 0:
@@ -65,7 +56,7 @@ class EventListener(threading.Thread):
             header = self.socket.recv_json()
             event_count = header['event_count']
             data = self.socket.recv()
-            return numpy.frombuffer(data, numpy.float64).reshape((event_count, 2))
+            return numpy.frombuffer(data, dtype=self.record_type)
         else:
             return None
 

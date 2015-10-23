@@ -28,6 +28,7 @@ class FakeEventStreamer(threading.Thread):
         packet = {
                 'type':'stream_info',
                 'version':self.version,
+                'record_type':self.eventGenerator.get_type_info()
                 }
         self.socket.send_json(packet)
 
@@ -54,26 +55,13 @@ class FakeEventStreamer(threading.Thread):
         while True:
             command = self.socket.recv()
             if command == 'h':
-                print 'Client requested header'
-                x = numpy.hstack([numpy.random.normal(size=1), numpy.random.normal(size=1, loc=4)])
-                self.socket.send_json(x.itemsize)
+                self.send_stream_info()
             elif command == 'd':
                 event_data = self.eventGenerator.get_events()
                 self.send_event_data(pulse_id=0, event_data=event_data)
             else:
                 print 'Unknown command ' + command
 
-
-class MetaDataGenerator(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.meta_data = None
-        # support two types:
-        # - based on timer (every N seconds)
-        # - based on change
-
-    def run(self):
-        print 'Starting MetaDataGenerator...'
 
 eventGenerator = EventGenerator()
 eventGenerator.start()

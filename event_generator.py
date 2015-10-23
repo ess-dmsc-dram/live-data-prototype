@@ -27,20 +27,19 @@ class EventGenerator(threading.Thread):
             self.update_sleep_time()
 
     def generate_events(self):
-        events = numpy.ndarray(shape=(self.chunk_size,2), dtype=float)
+        events = numpy.ndarray(shape=(self.chunk_size), dtype=self.get_type_info())
         indices = numpy.random.random_integers(0, len(self.generator_data)-1, self.chunk_size)
         for i in range(self.chunk_size):
             events[i] = self.generator_data[indices[i]]
         self.event_data.append(events)
 
-        #events = numpy.hstack([numpy.random.normal(size=self.size, scale=self.scale), numpy.random.normal(size=260, loc=4)])
-        #self.event_data.append(events)
-
     def get_events(self):
         while True:
             if self.event_data:
                 return self.event_data.popleft()
-            time.sleep(0.01)
+
+    def get_type_info(self):
+        return {'names':['detector_id', 'tof'], 'formats':['int32','float32']}
 
     def sleep(self):
         time.sleep(self.sleep_time)
