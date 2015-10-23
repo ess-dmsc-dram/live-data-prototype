@@ -5,6 +5,7 @@ import zmq
 from mpi4py import MPI
 
 import ports
+import command_line_parser
 import mantid_reduction
 from parameter_control_server import ParameterControlServer
 
@@ -41,7 +42,7 @@ class EventListener(threading.Thread):
         if comm.Get_rank() == 0:
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
-            uri = 'tcp://localhost:{0:d}'.format(ports.event_stream)
+            uri = 'tcp://{0}:{1:d}'.format(command_line_parser.get_host(), ports.event_stream)
             self.socket.connect(uri)
             print 'Connected to event streamer at ' + uri
 

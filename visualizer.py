@@ -7,9 +7,8 @@ from pyqtgraph.Qt import QtCore, QtGui
 import numpy
 
 import ports
+import command_line_parser
 
-HOST = 'localhost'
-PORT = ports.result_stream
 
 datatype = numpy.float64
 
@@ -50,7 +49,7 @@ class DataListener(Thread, QtCore.QObject):
     def connect(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
-        uri = 'tcp://localhost:{0:d}'.format(ports.result_stream)
+        uri = 'tcp://{0}:{1:d}'.format(command_line_parser.get_host(), ports.result_stream)
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
         print 'Substribed to result publisher at ' + uri
