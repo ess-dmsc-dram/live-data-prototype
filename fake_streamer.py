@@ -1,8 +1,6 @@
 import threading
-from collections import deque
 import time
 import zmq
-import numpy
 
 import ports
 from parameter_control_server import ParameterControlServer

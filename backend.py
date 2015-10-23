@@ -8,6 +8,7 @@ import ports
 import mantid_reduction
 from parameter_control_server import ParameterControlServer
 
+
 comm = MPI.COMM_WORLD
 
 print 'Rank {0:3d} started.'.format(comm.Get_rank())
@@ -133,7 +134,6 @@ class ResultPublisher(threading.Thread):
 
     def set_update_rate(self, update_rate):
         self.update_rate = update_rate
-
 
 
 eventListener = EventListener()
