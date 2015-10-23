@@ -32,9 +32,10 @@ class BraggPeakEventGenerator(object):
 
     def get_events(self, size):
         d_values = self._get_random_d_values(size)
-        detector_ids = np.random.choice(self.detector_ids, size=size)
+        detector_ids = np.array(np.random.choice(self.detector_ids, size=size), dtype='int32')
+        tofs = np.array([d * self.tof_factors[i] for d, i in zip(d_values, detector_ids)], dtype='float32')
 
-        return [(int(y), x * self.tof_factors[y]) for x, y in zip(d_values, detector_ids)]
+        return np.core.records.fromarrays([detector_ids, tofs], names=['detector_id', 'tof'], formats=['int32', 'float32'])
 
     def _get_random_d_values(self, size):
         return [x() for x in np.random.choice(self.distributions, size=size, p=self.weights)]
@@ -45,9 +46,8 @@ class BraggPeakEventGenerator(object):
     def _get_random_detector_id(self):
         return 0
 
-
-if __name__ == '__main__':
-    ws = CreateSimulationWorkspace(Instrument='/data/additional_mantid_test_data/POWDIFF_Definition.xml',
+def create_BraggEventGenerator(idf, crystal_structure, dmin, dmax):
+    ws = CreateSimulationWorkspace(Instrument=idf,
                                    BinParams='0.0,0.1,0.2')
 
     instrument = ws.getInstrument()
@@ -60,12 +60,13 @@ if __name__ == '__main__':
 
     tof_factors = [2.0 * m_n * s * st / h * 1e-4 for s, st in zip(distances, sin_theta)]
 
-    min = 0.3
-    max = 1.0
+    return BraggPeakEventGenerator(cs, dmin, dmax, tof_factors)
 
+
+if __name__ == '__main__':
     cs = CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01")
 
-    gen = BraggPeakEventGenerator(cs, min, max, tof_factors)
+    gen = create_BraggEventGenerator('/data/additional_mantid_test_data/POWDIFF_Definition.xml', cs, 0.5, 4.0)
 
     s = time.clock()
     events = gen.get_events(200000)
