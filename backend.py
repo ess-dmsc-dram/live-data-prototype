@@ -156,10 +156,16 @@ class ResultPublisher(threading.Thread):
 
 
 eventListener = EventListener()
+eventListener.daemon = True
 eventListener.start()
 
 if comm.Get_rank() == 0:
     resultPublisher = ResultPublisher(eventListener)
+    resultPublisher.daemon = True
     resultPublisher.start()
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
+    parameterController.daemon = True
     parameterController.start()
+
+while threading.active_count() > 0:
+    time.sleep(0.1)

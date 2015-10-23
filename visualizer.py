@@ -102,6 +102,7 @@ class DataListener(Thread, QtCore.QObject):
 #timer.start(1)
 
 dataListener = DataListener()
+dataListener.daemon = True
 plotter = Plotter(dataListener)
 
 
