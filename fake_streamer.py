@@ -12,6 +12,7 @@ from event_generator import EventGenerator
 class FakeEventStreamer(threading.Thread):
     def __init__(self, eventGenerator, version=1):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.version = version
         self.socket = None
         self.eventGenerator = eventGenerator
@@ -75,15 +76,12 @@ class MetaDataGenerator(threading.Thread):
         print 'Starting MetaDataGenerator...'
 
 eventGenerator = EventGenerator()
-eventGenerator.daemon = True
 eventGenerator.start()
 
 streamer = FakeEventStreamer(eventGenerator)
-streamer.daemon = True
 streamer.start()
 
 parameterController = ParameterControlServer(port=ports.streamer_control, parameter_dict=eventGenerator.get_parameter_dict())
-parameterController.daemon = True
 parameterController.start()
 
 while threading.active_count() > 0:

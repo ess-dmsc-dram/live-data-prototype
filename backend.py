@@ -16,6 +16,7 @@ print 'Rank {0:3d} started.'.format(comm.Get_rank())
 class EventListener(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.data = None
         self.result = None
         self.bin_boundaries = None
@@ -107,6 +108,7 @@ class ResultPublisher(threading.Thread):
         if comm.Get_rank() != 0:
             raise Exception('ResultPublisher can run only on rank 0')
         threading.Thread.__init__(self)
+        self.daemon = True
         self.eventListener = eventListener
         self.update_rate = 1.0
         self.socket = None
@@ -144,15 +146,12 @@ class ResultPublisher(threading.Thread):
 
 
 eventListener = EventListener()
-eventListener.daemon = True
 eventListener.start()
 
 if comm.Get_rank() == 0:
     resultPublisher = ResultPublisher(eventListener)
-    resultPublisher.daemon = True
     resultPublisher.start()
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
-    parameterController.daemon = True
     parameterController.start()
 
 while threading.active_count() > 0:

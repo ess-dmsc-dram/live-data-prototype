@@ -4,6 +4,7 @@ import zmq
 class ParameterControlServer(threading.Thread):
     def __init__(self, host='*', port=10000, parameter_dict={}, version=1):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.host = host
         self.port = port
         self.parameter_dict = parameter_dict

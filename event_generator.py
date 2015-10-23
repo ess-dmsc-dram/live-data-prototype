@@ -7,6 +7,7 @@ import numpy
 class EventGenerator(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.event_data = deque()
         self.rate = 1000000.0
         # do things on per-pulse basis?

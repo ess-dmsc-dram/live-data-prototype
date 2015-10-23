@@ -78,6 +78,7 @@ class DataListener(Thread, QtCore.QObject):
     new_data = QtCore.pyqtSignal()
     def __init__(self):
         Thread.__init__(self)
+        self.daemon = True
         QtCore.QObject.__init__(self)
         self.data = deque()
     def run(self):
@@ -102,7 +103,6 @@ class DataListener(Thread, QtCore.QObject):
 #timer.start(1)
 
 dataListener = DataListener()
-dataListener.daemon = True
 plotter = Plotter(dataListener)
 
 
