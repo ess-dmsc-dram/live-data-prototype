@@ -33,7 +33,6 @@ class EventListener(threading.Thread):
             processed_data = self.process_data(split_data)
             gathered_data = self.gather_data(processed_data)
             self.update_result(gathered_data)
-            #self.append_to_result()
 
     def connect(self):
         if comm.Get_rank() == 0:
@@ -83,9 +82,7 @@ class EventListener(threading.Thread):
         return comm.scatter(split, root=0)
 
     def process_data(self, data):
-        # readX, readY
         return mantid_reduction.reduce(data)
-        #self.mantid_data = numpy.concatenate((self.mantid_data[0], self.mantid_data[1]))
 
     def gather_data(self, data):
         rawdata = comm.gather(data[1], root=0)
@@ -93,17 +90,6 @@ class EventListener(threading.Thread):
             for i in range(1, len(rawdata)):
                 rawdata[0] += rawdata[i]
             return data[0], rawdata[0]
-            #self.mantid_data = numpy.concatenate((self.mantid_data[0], rawdata[0]))
-            #self.mantid_data = numpy.concatenate([numpy.frombuffer(rawdata[i], numpy.float64) for i in range(comm.size)])
-
-    def append_to_result(self):
-        if comm.Get_rank() == 0:
-            self.resultLock.acquire()
-            if self.result == None:
-                self.result = self.data
-            else:
-                self.result = numpy.append(self.result, self.data)
-            self.resultLock.release()
 
     def update_result(self, data):
         if comm.Get_rank() == 0:
@@ -111,11 +97,8 @@ class EventListener(threading.Thread):
             if self.bin_boundaries == None:
                 self.bin_boundaries = numpy.array(data[0], copy=True)
                 self.bin_values = numpy.array(data[1], copy=True)
-                #self.result = [ numpy.array(x, copy=True) for x in data ]
             else:
                 self.bin_values += data[1]
-                #self.result[1] += data[1]
-                #self.result[1] = numpy.add(self.result[1], self.mantid_data[1])
             self.resultLock.release()
 
 
@@ -139,7 +122,6 @@ class ResultPublisher(threading.Thread):
                 time.sleep(1)
                 self.eventListener.resultLock.acquire()
             packet = numpy.concatenate((self.eventListener.bin_boundaries, self.eventListener.bin_values))
-            #packet = numpy.concatenate((self.eventListener.result[0], self.eventListener.result[1]))
             self.socket.send(packet)
             # TODO is it safe to clear/release here? When is zmq done using the buffer?
             #self.eventListener.result = None
