@@ -63,8 +63,7 @@ class EventGenerator(threading.Thread):
 
     def load_event_data(self):
         print 'Loading event distribution...'
-        input_file = open('/home/simon/data/fake_instrument_event_data.dat')
-        self.generator_data = numpy.loadtxt(input_file)
+        self.generator_data = numpy.load('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
 
     def get_parameter_dict(self):
         return {'rate':(self.set_rate, 'float'), 'chunk_size':(self.set_chunk_size, 'int'), 'scale':(self.set_scale, 'float'), 'size':(self.set_size, 'int')}
