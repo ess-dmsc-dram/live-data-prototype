@@ -1,6 +1,5 @@
 from threading import Thread
 from collections import deque
-import struct
 import zmq
 
 import pyqtgraph as pg
@@ -12,48 +11,7 @@ import ports
 HOST = 'localhost'
 PORT = ports.result_stream
 
-def connect_zmq():
-    context = zmq.Context()
-    socket = context.socket(zmq.SUB)
-    #socket = context.socket(zmq.REQ)
-    socket.connect("tcp://%s:%s" % (HOST, PORT))
-    socket.setsockopt(zmq.SUBSCRIBE, '')
-    return socket
-
-socket = connect_zmq()
-
-def request_header_zmq():
-    socket.send('h')
-    itemsize = socket.recv_json()
-    #header = struct.unpack_from('i', buf)
-    print itemsize
-
-    if itemsize == 4:
-    #if header[0] == 4:
-        datatype = numpy.float32
-    else:
-        datatype = numpy.float64
-
-    return datatype
-
 datatype = numpy.float64
-#datatype = request_header_zmq()
-
-#def request_data_zmq():
-#    socket.send('d')
-#    data = numpy.frombuffer(socket.recv(), datatype)
-#    return data
-
-def request_data_zmq():
-    data = numpy.frombuffer(socket.recv(), datatype)
-    return data
-
-def get_histogram():
-    #data = request_data_socket()
-    data = request_data_zmq()
-    ## compute standard histogram
-    y,x = numpy.histogram(data, bins=200) #, bins=numpy.linspace(-3, 8, 40))
-    return y,x
 
 
 class Plotter():
@@ -72,35 +30,36 @@ class Plotter():
         self.plt1.enableAutoRange('xy', False)
 
 
-
-
 class DataListener(Thread, QtCore.QObject):
     new_data = QtCore.pyqtSignal()
+
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
         QtCore.QObject.__init__(self)
         self.data = deque()
+
     def run(self):
+        print 'Starting DataListener...'
+        self.connect()
         while True:
-            x,y = numpy.array_split(numpy.frombuffer(socket.recv(), datatype), 2)
-            print x
-            print y
-            print len(x), len(y)
-            #y,x = get_histogram()
+            x,y = self.get_histogram()
             self.data.append((x,y))
             self.new_data.emit()
 
-#def update():
-#    global curve, plt1
-#    y,x = get_histogram()
-#    curve.setData(x, y)
-#    plt1.enableAutoRange('xy', False)
+    def connect(self):
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.SUB)
+        uri = 'tcp://localhost:{0:d}'.format(ports.result_stream)
+        self.socket.connect(uri)
+        self.socket.setsockopt(zmq.SUBSCRIBE, '')
+        print 'Substribed to result publisher at ' + uri
 
+    def get_histogram(self):
+        data = numpy.frombuffer(self.socket.recv(), datatype)
+        x,y = numpy.array_split(data, 2)
+        return x,y
 
-#timer = QtCore.QTimer()
-#timer.timeout.connect(update)
-#timer.start(1)
 
 dataListener = DataListener()
 plotter = Plotter(dataListener)
