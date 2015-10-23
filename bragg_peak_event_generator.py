@@ -60,7 +60,7 @@ def create_BraggEventGenerator(idf, crystal_structure, dmin, dmax):
 
     tof_factors = [2.0 * m_n * s * st / h * 1e-4 for s, st in zip(distances, sin_theta)]
 
-    return BraggPeakEventGenerator(cs, dmin, dmax, tof_factors)
+    return BraggPeakEventGenerator(crystal_structure, dmin, dmax, tof_factors)
 
 
 if __name__ == '__main__':
