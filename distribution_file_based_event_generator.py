@@ -1,7 +1,7 @@
 import numpy
 
 
-class DistributionFileBasedEventGenerator():
+class DistributionFileBasedEventGenerator(object):
     def __init__(self, distribution_file):
         self._load_event_data(distribution_file)
 

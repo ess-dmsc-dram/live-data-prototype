@@ -13,7 +13,7 @@ import command_line_parser
 datatype = numpy.float64
 
 
-class Plotter():
+class Plotter(object):
     def __init__(self, dataListener):
         self.dataListener = dataListener
         self.win = pg.GraphicsWindow()
