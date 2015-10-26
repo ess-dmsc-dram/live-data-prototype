@@ -7,6 +7,7 @@ from mpi4py import MPI
 import ports
 import command_line_parser
 import mantid_reduction
+import mantid_reducer
 from parameter_control_server import ParameterControlServer
 
 
@@ -16,7 +17,7 @@ print 'Rank {0:3d} started.'.format(comm.Get_rank())
 
 
 class EventListener(threading.Thread):
-    def __init__(self):
+    def __init__(self, mantidReducer):
         threading.Thread.__init__(self)
         self.daemon = True
         self.data = None
@@ -26,6 +27,7 @@ class EventListener(threading.Thread):
         self.resultLock = threading.Lock()
         self.context = None
         self.socket = None
+        self._mantidReducer = mantidReducer
 
     def run(self):
         print 'Starting EventListener...'
@@ -34,9 +36,10 @@ class EventListener(threading.Thread):
         while True:
             data = self.get_data_from_stream()
             split_data = self.distribute_stream(data)
-            processed_data = self.process_data(split_data)
-            gathered_data = self.gather_data(processed_data)
-            self.update_result(gathered_data)
+            self.process_data(split_data)
+            #processed_data = self.process_data(split_data)
+            #gathered_data = self.gather_data(processed_data)
+            #self.update_result(gathered_data)
 
     def connect(self):
         if comm.Get_rank() == 0:
@@ -63,6 +66,9 @@ class EventListener(threading.Thread):
             return None
 
     def distribute_stream(self, data):
+        # TODO temporary change for tests
+        return data
+        # end
         if comm.Get_rank() == 0:
             split = []
             for i in range(comm.size):
@@ -75,8 +81,11 @@ class EventListener(threading.Thread):
             split = None
         return comm.scatter(split, root=0)
 
+    #def process_data(self, data):
+    #    return mantid_reduction.reduce(data)
+
     def process_data(self, data):
-        return mantid_reduction.reduce(data)
+        self._mantidReducer.reduce(data)
 
     def gather_data(self, data):
         rawdata = comm.gather(data[1], root=0)
@@ -136,11 +145,24 @@ class ResultPublisher(threading.Thread):
         self.update_rate = update_rate
 
 
-eventListener = EventListener()
+mantidReducer = mantid_reducer.MantidReducer()
+
+mantidRebinner = mantid_reducer.MantidRebinner()
+mantidRebinner.start()
+
+# TODO: MPI...
+binController = ParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
+binController.start()
+
+mantidMerger = mantid_reducer.MantidMerger(mantidReducer, mantidRebinner)
+mantidMerger.start()
+
+eventListener = EventListener(mantidReducer)
 eventListener.start()
 
 if comm.Get_rank() == 0:
-    resultPublisher = ResultPublisher(eventListener)
+    #resultPublisher = ResultPublisher(eventListener)
+    resultPublisher = ResultPublisher(mantidRebinner)
     resultPublisher.start()
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
     parameterController.start()
