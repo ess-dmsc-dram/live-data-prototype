@@ -81,9 +81,8 @@ class EventListener(threading.Thread):
     def gather_data(self, data):
         rawdata = comm.gather(data[1], root=0)
         if comm.Get_rank() == 0:
-            for i in range(1, len(rawdata)):
-                rawdata[0] += rawdata[i]
-            return data[0], rawdata[0]
+            summed = sum(rawdata)
+            return data[0], summed
 
     def update_result(self, data):
         if comm.Get_rank() == 0:
