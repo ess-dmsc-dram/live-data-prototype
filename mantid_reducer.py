@@ -107,7 +107,9 @@ class MantidRebinner(threading.Thread):
     def update_result(self, bin_boundaries, bin_values):
         self.resultLock.acquire()
         self.bin_boundaries = bin_boundaries
-        self.bin_values = sum(comm.gather(bin_values, root=0))
+        gathered = comm.gather(bin_values, root=0)
+        if comm.Get_rank() == 0:
+            self.bin_values = sum(gathered)
         self.resultLock.release()
 
     def _init_workspace(self):

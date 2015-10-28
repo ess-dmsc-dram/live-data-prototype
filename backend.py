@@ -9,6 +9,7 @@ import command_line_parser
 import mantid_reduction
 import mantid_reducer
 from parameter_control_server import ParameterControlServer
+from distributed_parameter_control_server import DistributedParameterControlServer
 
 
 comm = MPI.COMM_WORLD
@@ -66,9 +67,6 @@ class EventListener(threading.Thread):
             return None
 
     def distribute_stream(self, data):
-        # TODO temporary change for tests
-        return data
-        # end
         if comm.Get_rank() == 0:
             split = []
             for i in range(comm.size):
@@ -151,7 +149,8 @@ mantidRebinner = mantid_reducer.MantidRebinner()
 mantidRebinner.start()
 
 # TODO: MPI...
-binController = ParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
+#binController = ParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
+binController = DistributedParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
 binController.start()
 
 mantidMerger = mantid_reducer.MantidMerger(mantidReducer, mantidRebinner)
