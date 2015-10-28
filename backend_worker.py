@@ -1,13 +1,11 @@
-from threading import Thread
 from collections import deque
 import zmq
 import time
 from mpi4py import MPI
 
 
-class BackendWorker(Thread):
+class BackendWorker(object):
     def __init__(self, command_queue, data_queue):
-        Thread.__init__(self)
         self._command_queue = command_queue
         self._data_queue = data_queue
 
@@ -40,10 +38,8 @@ class BackendWorker(Thread):
         print('processed packet {}'.format(self._last_processed_packet_index))
 
 
-class BackendCommandQueue(Thread):
+class BackendCommandQueue(object):
     def __init__(self, host='localhost', port=10000):
-        Thread.__init__(self)
-        #self.daemon = True
         self._host = host
         self._port = port
         self._command_queue = deque()

@@ -1,4 +1,3 @@
-from threading import Thread
 from collections import deque
 import zmq
 
@@ -6,9 +5,8 @@ import zmq
 # TODO: use IPC with a pipe instead of TCP
 
 
-class ZMQQueueServer(Thread):
+class ZMQQueueServer(object):
     def __init__(self, host='*', port=10000):
-        Thread.__init__(self)
         self._host = host
         self._port = port
         self._deque = deque()
