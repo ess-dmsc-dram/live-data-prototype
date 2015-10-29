@@ -1,5 +1,6 @@
 import threading
 from copy import deepcopy
+import time
 
 import numpy
 from mpi4py import MPI
@@ -34,9 +35,9 @@ class BackendMantidRebinner(object):
         #self._rebinEvent.clear()
 
         self.current_bin_parameters = self._target_bin_parameters
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace=self.ws, Params=self.current_bin_parameters)
-        bin_boundaries = deepcopy(self.ws.readX(0))
-        bin_values = deepcopy(self.ws.readY(0))
+        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace=self.histo_ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        bin_boundaries = deepcopy(self.histo_ws.readX(0))
+        bin_values = deepcopy(self.histo_ws.readY(0))
 
         self.update_result(bin_boundaries, bin_values)
 
@@ -48,7 +49,7 @@ class BackendMantidRebinner(object):
         #self._rebinEvent.set()
 
     def update_result(self, bin_boundaries, bin_values):
-        print 'updating result'
+        #print 'updating result'
         self.resultLock.acquire()
         self.bin_boundaries = bin_boundaries
         gathered = self._comm.gather(bin_values, root=0)
@@ -70,7 +71,8 @@ class BackendMantidRebinner(object):
         mantid.SumSpectra(InputWorkspace=tmp, OutputWorkspace='accumulated')
         mantid.DeleteWorkspace(Workspace='tmp')
         self.ws = AnalysisDataService['accumulated']
-
+        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned', Params=self.current_bin_parameters, PreserveEvents=False)
+        self.histo_ws = AnalysisDataService['accumulated_binned']
 
 
 class BackendMantidReducer(BackendWorker):
@@ -89,9 +91,13 @@ class BackendMantidReducer(BackendWorker):
         event_data = numpy.frombuffer(self._data_queue_in.get(), dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
         #print 'start reduce'
+        t0 = time.time()
         reduced = self._reduce(event_data)
+        t1 = time.time()
         #print 'start merge'
         self._merge(reduced)
+        t2 = time.time()
+        print('Rank {} times {} {}'.format(MPI.COMM_WORLD.Get_rank(), t1-t0, t2-t1))
 
         print('Rank {} processed {}'.format(MPI.COMM_WORLD.Get_rank(), self._last_processed_packet_index))
         self._last_processed_packet_index += 1
@@ -118,13 +124,24 @@ class BackendMantidReducer(BackendWorker):
 
     def _merge(self, ws_new):
         # TODO: use Mantid to compare bin sizes?
-        if self._rebinner.current_bin_parameters != '0.4,0.1,5':
-            # TODO: we should probably move the Rebin outside the lock (but take care when checking bin params!)
-            mantid.Rebin(InputWorkspace=ws_new, OutputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters)
+        #if self._rebinner.current_bin_parameters != '0.4,0.1,5':
+        # TODO: we should probably move the Rebin outside the lock (but take care when checking bin params!)
+        histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
+        t0 = time.time()
         self._rebinner.ws += ws_new
+        self._rebinner.histo_ws += histo_ws_new
+        mantid.DeleteWorkspace(Workspace='histo_ws_new')
+        t1 = time.time()
         AnalysisDataService.Instance().remove(ws_new.name())
-        bin_boundaries = deepcopy(self._rebinner.ws.readX(0))
-        bin_values = deepcopy(self._rebinner.ws.readY(0))
+        t2 = time.time()
+        #bin_boundaries = deepcopy(self._rebinner.ws.readX(0))
+        #bin_values = deepcopy(self._rebinner.ws.readY(0))
+        bin_boundaries = self._rebinner.histo_ws.readX(0)
+        t3 = time.time()
+        bin_values = self._rebinner.histo_ws.readY(0)
+        t4 = time.time()
 
         # TODO: can this lead to race conditions with update from within rebinner?
         self._rebinner.update_result(bin_boundaries, bin_values)
+        t5 = time.time()
+        print('Rank {} times {} {} {} {}'.format(MPI.COMM_WORLD.Get_rank(), t1-t0, t2-t1, t3-t2, t4-t3))
