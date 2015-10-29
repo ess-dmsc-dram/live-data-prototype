@@ -26,14 +26,9 @@ class BackendMantidRebinner(object):
         self.bin_values = None
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
-        #self._rebinEvent = threading.Event()
         self._init_workspace()
 
     def rebin(self):
-        #if not self._rebinEvent.is_set():
-        #    return
-        #self._rebinEvent.clear()
-
         self.current_bin_parameters = self._target_bin_parameters
         mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace=self.histo_ws, Params=self.current_bin_parameters, PreserveEvents=False)
         bin_boundaries = deepcopy(self.histo_ws.readX(0))
@@ -46,15 +41,12 @@ class BackendMantidRebinner(object):
 
     def set_bin_parameters(self, bin_parameters):
         self._target_bin_parameters = str(bin_parameters)
-        #self._rebinEvent.set()
 
     def update_result(self, bin_boundaries, bin_values):
-        #print 'updating result'
         self.resultLock.acquire()
         self.bin_boundaries = bin_boundaries
         gathered = self._comm.gather(bin_values, root=0)
         if self._comm.Get_rank() == 0:
-            #print gathered
             self.bin_values = sum(gathered)
         self.resultLock.release()
 
@@ -87,21 +79,14 @@ class BackendMantidReducer(BackendWorker):
 
     def _process_data(self):
         if not self._data_queue_in:
-            return
+            return False
         event_data = numpy.frombuffer(self._data_queue_in.get(), dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
-        #print 'start reduce'
-        t0 = time.time()
         reduced = self._reduce(event_data)
-        t1 = time.time()
-        #print 'start merge'
         self._merge(reduced)
-        t2 = time.time()
-        print('Rank {} times {} {}'.format(MPI.COMM_WORLD.Get_rank(), t1-t0, t2-t1))
 
         print('Rank {} processed {}'.format(MPI.COMM_WORLD.Get_rank(), self._last_processed_packet_index))
         self._last_processed_packet_index += 1
-        #print 'reduce done'
 
         return True
 
@@ -123,25 +108,12 @@ class BackendMantidReducer(BackendWorker):
         return AnalysisDataService[name]
 
     def _merge(self, ws_new):
-        # TODO: use Mantid to compare bin sizes?
-        #if self._rebinner.current_bin_parameters != '0.4,0.1,5':
-        # TODO: we should probably move the Rebin outside the lock (but take care when checking bin params!)
         histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
-        t0 = time.time()
         self._rebinner.ws += ws_new
         self._rebinner.histo_ws += histo_ws_new
-        mantid.DeleteWorkspace(Workspace='histo_ws_new')
-        t1 = time.time()
         AnalysisDataService.Instance().remove(ws_new.name())
-        t2 = time.time()
-        #bin_boundaries = deepcopy(self._rebinner.ws.readX(0))
-        #bin_values = deepcopy(self._rebinner.ws.readY(0))
+        AnalysisDataService.Instance().remove(histo_ws_new.name())
         bin_boundaries = self._rebinner.histo_ws.readX(0)
-        t3 = time.time()
         bin_values = self._rebinner.histo_ws.readY(0)
-        t4 = time.time()
 
-        # TODO: can this lead to race conditions with update from within rebinner?
         self._rebinner.update_result(bin_boundaries, bin_values)
-        t5 = time.time()
-        print('Rank {} times {} {} {} {}'.format(MPI.COMM_WORLD.Get_rank(), t1-t0, t2-t1, t3-t2, t4-t3))

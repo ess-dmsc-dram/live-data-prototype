@@ -34,8 +34,6 @@ class BackendWorker(object):
     def _try_process_data(self):
         if not self._process_data():
             time.sleep(0.05)
-        #else:
-        #    print('Process packet {}'.format(self._last_processed_packet_index))
 
 
 class BackendCommandQueue(object):
