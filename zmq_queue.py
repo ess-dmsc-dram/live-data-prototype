@@ -28,7 +28,7 @@ class ZMQQueueServer(object):
             while not self._deque:
                 time.sleep(0.1)
             self._socket.send(self._deque.popleft())
-            print('Server, remaining length: {}'.format(len(self._deque)))
+            #print('Server, remaining length: {}'.format(len(self._deque)))
 
     def put(self, item):
         self._deque.append(item)
@@ -59,7 +59,7 @@ class ZMQQueueClient(object):
     def get(self):
         while not self._deque:
             time.sleep(0.1)
-        print('Client, remaining length: {}'.format(len(self._deque)-1))
+        #print('Client, remaining length: {}'.format(len(self._deque)-1))
         return self._deque.popleft()
 
     def _connect(self, host, port):

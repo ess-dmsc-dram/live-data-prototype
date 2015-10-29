@@ -12,6 +12,9 @@ from mantid.api import AnalysisDataService
 from mantid.api import StorageMode
 
 mantid.config['MultiThreaded.MaxCores'] = '1'
+#if comm.Get_rank() != 0:
+mantid.ConfigService.setConsoleLogLevel(0)
+
 
 
 class BackendMantidRebinner(object):
@@ -22,12 +25,13 @@ class BackendMantidRebinner(object):
         self.bin_values = None
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
-        self._rebinEvent = threading.Event()
+        #self._rebinEvent = threading.Event()
         self._init_workspace()
 
     def rebin(self):
-        self._rebinEvent.wait()
-        self._rebinEvent.clear()
+        #if not self._rebinEvent.is_set():
+        #    return
+        #self._rebinEvent.clear()
 
         self.current_bin_parameters = self._target_bin_parameters
         mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace=self.ws, Params=self.current_bin_parameters)
@@ -41,13 +45,15 @@ class BackendMantidRebinner(object):
 
     def set_bin_parameters(self, bin_parameters):
         self._target_bin_parameters = str(bin_parameters)
-        self._rebinEvent.set()
+        #self._rebinEvent.set()
 
     def update_result(self, bin_boundaries, bin_values):
+        print 'updating result'
         self.resultLock.acquire()
         self.bin_boundaries = bin_boundaries
         gathered = self._comm.gather(bin_values, root=0)
         if self._comm.Get_rank() == 0:
+            #print gathered
             self.bin_values = sum(gathered)
         self.resultLock.release()
 
@@ -73,20 +79,23 @@ class BackendMantidReducer(BackendWorker):
         self._data_queue_in = data_queue_in
         self._rebinner = rebinner
 
+    def _process_command(self, command):
+        self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
+        self._rebinner.rebin()
+
     def _process_data(self):
         if not self._data_queue_in:
             return
         event_data = numpy.frombuffer(self._data_queue_in.get(), dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
-        print 'start reduce'
+        #print 'start reduce'
         reduced = self._reduce(event_data)
-        print 'start merge'
+        #print 'start merge'
         self._merge(reduced)
-        #print 'start rebin'
-        #self._rebinner.rebin()
 
+        print('Rank {} processed {}'.format(MPI.COMM_WORLD.Get_rank(), self._last_processed_packet_index))
         self._last_processed_packet_index += 1
-        print 'reduce done'
+        #print 'reduce done'
 
         return True
 

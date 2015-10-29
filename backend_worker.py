@@ -13,9 +13,14 @@ class BackendWorker(object):
         self._startup()
         while True:
             if self._command_queue:
-                command_index = max(MPI.COMM_WORLD.allgather(self._last_processed_packet_index))
+                print('{} got command'.format(time.time()))
+                indices = MPI.COMM_WORLD.allgather(self._last_processed_packet_index)
+                print indices
+                command_index = max(indices)
+                print('{} command index will be {}'.format(time.time(), command_index))
                 while command_index > self._last_processed_packet_index:
                     self._try_process_data()
+                print('{} processing command'.format(time.time()))
                 self._process_command(self._command_queue.get())
             else:
                 self._try_process_data()
@@ -29,8 +34,8 @@ class BackendWorker(object):
     def _try_process_data(self):
         if not self._process_data():
             time.sleep(0.05)
-        else:
-            print('Process packet {}'.format(self._last_processed_packet_index))
+        #else:
+        #    print('Process packet {}'.format(self._last_processed_packet_index))
 
 
 class BackendCommandQueue(object):
@@ -49,7 +54,7 @@ class BackendCommandQueue(object):
         print 'Starting BackendCommandQueue...'
         self._connect(self._host, self._port)
         while True:
-            self._command_queue.append(self._socket.recv())
+            self._command_queue.append(self._socket.recv_json())
 
     def _connect(self, host, port):
         context = zmq.Context()
@@ -65,7 +70,7 @@ class BackendCommandPublisher(object):
         self._connect(host, port)
 
     def publish(self, command):
-        self._socket.send(command)
+        self._socket.send_json(command)
 
     def _connect(self, host, port):
         context = zmq.Context()
