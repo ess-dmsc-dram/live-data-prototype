@@ -1,5 +1,6 @@
 from collections import deque
 import zmq
+import time
 
 
 # TODO: use IPC with a pipe instead of TCP
@@ -22,24 +23,19 @@ class ZMQQueueServer(object):
         print('Starting ZMQQueueServer')
         self._connect(self._host, self._port)
         while True:
-            command = self._socket.recv()
-            if command == 'len':
-                self._socket.send_json(len(self))
-            elif command == 'get':
-                # wait for data
-                # TODO proper sleep time
-                while not self._deque:
-                    time.sleep(0.1)
-                self._socket.send(self._deque.popleft())
-            else:
-                self._socket.send('Unknown command')
+            # wait for data
+            # TODO proper sleep time
+            while not self._deque:
+                time.sleep(0.1)
+            self._socket.send(self._deque.popleft())
+            print('Server, remaining length: {}'.format(len(self._deque)))
 
     def put(self, item):
         self._deque.append(item)
 
     def _connect(self, host, port):
         context = zmq.Context()
-        self._socket = context.socket(zmq.REP)
+        self._socket = context.socket(zmq.PUSH)
         uri = 'tcp://{0}:{1:d}'.format(host, port)
         self._socket.bind(uri)
         print('ZMQQueueServer: Bound to ' + uri)
@@ -50,23 +46,25 @@ class ZMQQueueClient(object):
         self._host = host
         self._port = port
         self._deque = deque()
+        self._connect(self._host, self._port)
 
     def __len__(self):
         return len(self._deque)
 
     def run(self):
         print('Starting ZMQQueueClient')
-        self._connect(self._host, self._port)
         while True:
-            self._socket.send('get')
             self._deque.append(self._socket.recv())
 
     def get(self):
+        while not self._deque:
+            time.sleep(0.1)
+        print('Client, remaining length: {}'.format(len(self._deque)-1))
         return self._deque.popleft()
 
     def _connect(self, host, port):
         context = zmq.Context()
-        self._socket = context.socket(zmq.REQ)
+        self._socket = context.socket(zmq.PULL)
         uri = 'tcp://{0}:{1:d}'.format(host, port)
         self._socket.connect(uri)
         print('ZMQQueueClient: Connected to ZMQQueueServer at ' + uri)
