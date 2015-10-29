@@ -143,28 +143,29 @@ class ResultPublisher(threading.Thread):
         self.update_rate = update_rate
 
 
-mantidReducer = mantid_reducer.MantidReducer()
+if __name__ == '__main__':
+    mantidReducer = mantid_reducer.MantidReducer()
 
-mantidRebinner = mantid_reducer.MantidRebinner()
-mantidRebinner.start()
+    mantidRebinner = mantid_reducer.MantidRebinner()
+    mantidRebinner.start()
 
-# TODO: MPI...
-#binController = ParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
-binController = DistributedParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
-binController.start()
+    # TODO: MPI...
+    #binController = ParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
+    binController = DistributedParameterControlServer(port=ports.rebin_control, parameter_dict=mantidRebinner.get_parameter_dict())
+    binController.start()
 
-mantidMerger = mantid_reducer.MantidMerger(mantidReducer, mantidRebinner)
-mantidMerger.start()
+    mantidMerger = mantid_reducer.MantidMerger(mantidReducer, mantidRebinner)
+    mantidMerger.start()
 
-eventListener = EventListener(mantidReducer)
-eventListener.start()
+    eventListener = EventListener(mantidReducer)
+    eventListener.start()
 
-if comm.Get_rank() == 0:
-    #resultPublisher = ResultPublisher(eventListener)
-    resultPublisher = ResultPublisher(mantidRebinner)
-    resultPublisher.start()
-    parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
-    parameterController.start()
+    if comm.Get_rank() == 0:
+        #resultPublisher = ResultPublisher(eventListener)
+        resultPublisher = ResultPublisher(mantidRebinner)
+        resultPublisher.start()
+        parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
+        parameterController.start()
 
-while threading.active_count() > 0:
-    time.sleep(0.1)
+    while threading.active_count() > 0:
+        time.sleep(0.1)

@@ -5,32 +5,32 @@ from mpi4py import MPI
 
 
 class BackendWorker(object):
-    def __init__(self, command_queue, data_queue_in, data_queue_out):
+    def __init__(self, command_queue):
         self._command_queue = command_queue
-        self._data_queue_in = data_queue_in
-        self._data_queue_out = data_queue_out
+        self._last_processed_packet_index = 0
 
     def run(self):
+        self._startup()
         while True:
             if self._command_queue:
                 command_index = max(MPI.COMM_WORLD.allgather(self._last_processed_packet_index))
                 while command_index > self._last_processed_packet_index:
-                    self._try_process_packet()
+                    self._try_process_data()
                 self._process_command(self._command_queue.get())
             else:
-                self._try_process_packet()
+                self._try_process_data()
+
+    def _startup(self):
+        pass
 
     def _process_command(self, command):
-        print('Rank {} {}: {}'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
+        print('Rank {} {}: {} (processing not implemented)'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
 
-    def _try_process_packet(self):
-        if self._data_queue_in:
-            data = self._data_queue_in.get()
-            self._last_processed_packet_index = int(data)
-            #self._process_packet(data)
-            print('Rank {} {}: processed packet {}'.format(MPI.COMM_WORLD.Get_rank(), time.time(), self._last_processed_packet_index))
-        else:
+    def _try_process_data(self):
+        if not self._process_data():
             time.sleep(0.05)
+        else:
+            print('Process packet {}'.format(self._last_processed_packet_index))
 
 
 class BackendCommandQueue(object):
