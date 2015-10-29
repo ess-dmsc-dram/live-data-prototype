@@ -5,9 +5,10 @@ from mpi4py import MPI
 
 
 class BackendWorker(object):
-    def __init__(self, command_queue, data_queue):
+    def __init__(self, command_queue, data_queue_in, data_queue_out):
         self._command_queue = command_queue
-        self._data_queue = data_queue
+        self._data_queue_in = data_queue_in
+        self._data_queue_out = data_queue_out
 
     def run(self):
         while True:
@@ -23,19 +24,13 @@ class BackendWorker(object):
         print('Rank {} {}: {}'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
 
     def _try_process_packet(self):
-        if self._data_queue:
-            data = self._data_queue.get()
+        if self._data_queue_in:
+            data = self._data_queue_in.get()
             self._last_processed_packet_index = int(data)
+            #self._process_packet(data)
             print('Rank {} {}: processed packet {}'.format(MPI.COMM_WORLD.Get_rank(), time.time(), self._last_processed_packet_index))
         else:
             time.sleep(0.05)
-
-    def _process_packet(self):
-        while not self._data_queue:
-            time.sleep(0.1)
-        data = self._data_queue.get()
-        self._last_processed_packet_index = int(data)
-        print('processed packet {}'.format(self._last_processed_packet_index))
 
 
 class BackendCommandQueue(object):
