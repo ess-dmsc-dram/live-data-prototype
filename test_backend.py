@@ -15,7 +15,6 @@ from mpi4py import MPI
 
 rank = MPI.COMM_WORLD.Get_rank()
 event_queue_port = 11000 + rank
-reduced_event_queue_port = 12000 + rank
 
 event_queue_in = ZMQQueueClient(port=event_queue_port)
 event_queue_in_thread = threading.Thread(target=event_queue_in.run)
