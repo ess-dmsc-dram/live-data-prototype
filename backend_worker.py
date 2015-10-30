@@ -18,30 +18,24 @@ class BackendWorker(object):
     def run(self):
         self._startup()
         while True:
-            self._comm.Barrier()
-            print '{} before beat'.format(self._rank)
-            self._comm.Barrier()
             if self._is_root():
                 if self._command_queue:
                     # beat says: process command
-                    command = self._heartbeat.beat(self._command_queue.get()['payload']['bin_parameters'])
+                    what, payload = self._heartbeat.put_user_command(self._command_queue.get()['payload']['bin_parameters'])
                 elif self._can_process_data():
                     # beat says: process data
-                    command = self._heartbeat.beat('data')
+                    what, payload = self._heartbeat.put_control('process data')
                 else:
                     # empty beat
-                    command = self._heartbeat.beat()
+                    what, payload = self._heartbeat.put_idle()
             else:
-                command = self._heartbeat.beat()
-            self._comm.Barrier()
-            print '{} after beat'.format(self._rank)
-            self._comm.Barrier()
+                what, payload = self._heartbeat.get()
 
-            if command == 'data':
+            if what == 1:
                 self._try_process_data()
-            elif command != None:
+            elif what == 2:
                 print('{} got command'.format(time.time()))
-                self._process_command(command)
+                self._process_command(payload)
             else:
                 # no data, no command, sleep till next beat
                 time.sleep(0.05)
