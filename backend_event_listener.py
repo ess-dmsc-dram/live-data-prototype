@@ -23,6 +23,10 @@ class EventListener(BackendWorker):
         self._connect()
         self._get_stream_info()
 
+    def _can_process_data(self):
+        # TODO: for now we always say yes, i.e., we constantly wait for the stream
+        return True
+
     def _process_data(self):
         # TODO: With this implementation the EventListener will not
         # react to commands unless stream data keeps coming in.

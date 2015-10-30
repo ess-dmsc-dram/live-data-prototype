@@ -23,9 +23,12 @@ event_queue_in_thread.start()
 
 rebinner = BackendMantidRebinner()
 
-command_queue = BackendCommandQueue(port=ports.rebin_control)
-command_queue_thread = threading.Thread(target=command_queue.run)
-command_queue_thread.start()
+if MPI.COMM_WORLD.Get_rank() == 0:
+    command_queue = BackendCommandQueue(port=ports.rebin_control)
+    command_queue_thread = threading.Thread(target=command_queue.run)
+    command_queue_thread.start()
+else:
+    command_queue = None
 
 reducer = BackendMantidReducer(command_queue, event_queue_in, rebinner)
 reducer_thread = threading.Thread(target=reducer.run)

@@ -74,8 +74,17 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner = rebinner
 
     def _process_command(self, command):
-        self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
+        print 'processing command'
+        #self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
+        self._rebinner.set_bin_parameters(command)
         self._rebinner.rebin()
+        print 'rebin done'
+
+    def _can_process_data(self):
+        if self._data_queue_in:
+            return True
+        else:
+            return False
 
     def _process_data(self):
         if not self._data_queue_in:

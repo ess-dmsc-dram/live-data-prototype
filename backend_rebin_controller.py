@@ -7,9 +7,8 @@ import sys
 import ports
 
 
-publisher = BackendCommandPublisher(num_clients=int(sys.argv[1]), port=ports.rebin_control)
+publisher = BackendCommandPublisher(1, port=ports.rebin_control)
 
-time.sleep(0.5)
 
 #def connect_zmq():
 #    context = zmq.Context()
@@ -19,13 +18,11 @@ time.sleep(0.5)
 #
 #socket = connect_zmq()
 
-def set_bin_parameters(params):
+def set_bin_parameters():
     #socket.send_json({'version':1, 'request_type':'set_parameters','payload':{'bin_parameters':str(sys.argv[1])}})
-    publisher.publish({'version':1, 'request_type':'set_parameters','payload':{'bin_parameters':str(params)}})
+    publisher.publish({'version':1, 'request_type':'set_parameters','payload':{'bin_parameters':str(sys.argv[1])}})
     #status = socket.recv()
     #print status
 
-while True:
-    params=str(raw_input('Rebin parameters: '))
-    set_bin_parameters(params)
+set_bin_parameters()
 

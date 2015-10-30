@@ -38,7 +38,7 @@ class BackendHeartbeat(object):
         if command == None:
             return struct.pack('11xbI48s', 0, 0, str())
         else:
-            return struct.pack('11xbI48s', 1, len(command), command)
+            return struct.pack('11xbI48s', 1, len(command), str(command))
 
     def _unpack_header(self, header):
         data = struct.unpack('11xbI48s', header)

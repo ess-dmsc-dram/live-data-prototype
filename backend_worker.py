@@ -3,27 +3,48 @@ import zmq
 import time
 from mpi4py import MPI
 
+from backend_heartbeat import BackendHeartbeat
+
 
 class BackendWorker(object):
-    def __init__(self, command_queue):
+    def __init__(self, command_queue, communicator=MPI.COMM_WORLD, root_rank=0):
+        self._comm = communicator
+        self._rank = self._comm.Get_rank()
+        self._root = root_rank
+        self._heartbeat = BackendHeartbeat(self._comm, self._root)
         self._command_queue = command_queue
         self._last_processed_packet_index = 0
 
     def run(self):
         self._startup()
         while True:
-            if self._command_queue:
-                print('{} got command'.format(time.time()))
-                indices = MPI.COMM_WORLD.allgather(self._last_processed_packet_index)
-                print indices
-                command_index = max(indices)
-                print('{} command index will be {}'.format(time.time(), command_index))
-                while command_index > self._last_processed_packet_index:
-                    self._try_process_data()
-                print('{} processing command'.format(time.time()))
-                self._process_command(self._command_queue.get())
+            self._comm.Barrier()
+            print '{} before beat'.format(self._rank)
+            self._comm.Barrier()
+            if self._is_root():
+                if self._command_queue:
+                    # beat says: process command
+                    command = self._heartbeat.beat(self._command_queue.get()['payload']['bin_parameters'])
+                elif self._can_process_data():
+                    # beat says: process data
+                    command = self._heartbeat.beat('data')
+                else:
+                    # empty beat
+                    command = self._heartbeat.beat()
             else:
+                command = self._heartbeat.beat()
+            self._comm.Barrier()
+            print '{} after beat'.format(self._rank)
+            self._comm.Barrier()
+
+            if command == 'data':
                 self._try_process_data()
+            elif command != None:
+                print('{} got command'.format(time.time()))
+                self._process_command(command)
+            else:
+                # no data, no command, sleep till next beat
+                time.sleep(0.05)
 
     def _startup(self):
         pass
@@ -32,8 +53,11 @@ class BackendWorker(object):
         print('Rank {} {}: {} (processing not implemented)'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
 
     def _try_process_data(self):
-        if not self._process_data():
+        while not self._process_data():
             time.sleep(0.05)
+
+    def _is_root(self):
+        return self._rank == self._root
 
 
 class BackendCommandQueue(object):
