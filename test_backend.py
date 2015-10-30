@@ -38,7 +38,8 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     resultPublisher = ResultPublisher(rebinner)
     resultPublisher.start()
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
-    parameterController.start()
+    parameterController_thread = threading.Thread(target=parameterController.run)
+    parameterController_thread.start()
 
 while threading.active_count() > 0:
     time.sleep(0.1)
