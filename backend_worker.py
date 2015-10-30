@@ -13,24 +13,11 @@ class BackendWorker(object):
         self._root = root_rank
         self._heartbeat = BackendHeartbeat(self._comm, self._root)
         self._command_queue = command_queue
-        self._last_processed_packet_index = 0
 
     def run(self):
         self._startup()
         while True:
-            if self._is_root():
-                if self._command_queue:
-                    # beat says: process command
-                    what, payload = self._heartbeat.put_user_command(self._command_queue.get()['payload']['bin_parameters'])
-                elif self._can_process_data():
-                    # beat says: process data
-                    what, payload = self._heartbeat.put_control('process data')
-                else:
-                    # empty beat
-                    what, payload = self._heartbeat.put_idle()
-            else:
-                what, payload = self._heartbeat.get()
-
+            what, payload = self._do_heartbeat()
             if what == 1:
                 self._try_process_data()
             elif what == 2:
@@ -42,6 +29,20 @@ class BackendWorker(object):
 
     def _startup(self):
         pass
+
+    def _do_heartbeat(self):
+        if self._is_root():
+            if self._command_queue:
+                # beat says: process command
+                return self._heartbeat.put_user_command(self._command_queue.get()['payload']['bin_parameters'])
+            elif self._can_process_data():
+                # beat says: process data
+                return self._heartbeat.put_control('process data')
+            else:
+                # empty beat
+                return self._heartbeat.put_idle()
+        else:
+            return self._heartbeat.get()
 
     def _process_command(self, command):
         print('Rank {} {}: {} (processing not implemented)'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
@@ -81,13 +82,11 @@ class BackendCommandQueue(object):
 
 
 class BackendCommandPublisher(object):
-    def __init__(self, num_clients, host='*', port=10000):
+    def __init__(self, host='*', port=10000):
         self._connect(host, port)
-        self._num_clients = num_clients
 
     def publish(self, command):
-        for i in range(self._num_clients):
-            self._socket.send_json(command)
+        self._socket.send_json(command)
 
     def _connect(self, host, port):
         context = zmq.Context()

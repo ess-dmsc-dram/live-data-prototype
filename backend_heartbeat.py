@@ -8,10 +8,10 @@ from mpi4py import MPI
 # Small size for default heartbeat, 64 Byte should be small enough
 # to be below the point where MPI broadcast slows down significantly.
 #
-# bytes | description | values
-# 0     | type        | idle=0, control=1, user_cmd=2
-# 1-10  | padding | -
-# 12-15 | paylad length | uint32, giving size in Byte
+# bytes | description            | values
+# 0     | type  ('what')         | idle=0, control=1, user_cmd=2
+# 1-11  | padding                | -
+# 12-15 | payload length         | uint32, giving size in Byte
 # 16-63 | inline command payload
 
 class BackendHeartbeat(object):
@@ -65,12 +65,6 @@ class BackendHeartbeat(object):
     def _create_user_command_header(self, command):
         # 2 = user command
         return self._create_data_header(2, command)
-
-    #def _create_header(self, command):
-    #    if command == None:
-    #        return struct.pack('11xbI48s', 0, 0, str())
-    #    else:
-    #        return struct.pack('11xbI48s', 1, len(command), str(command))
 
     def _unpack_header(self, header):
         data = struct.unpack('b11xI48s', header)

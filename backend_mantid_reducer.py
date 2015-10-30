@@ -73,6 +73,7 @@ class BackendMantidReducer(BackendWorker):
         BackendWorker.__init__(self, command_queue)
         self._data_queue_in = data_queue_in
         self._rebinner = rebinner
+        self._packet_index = 0
 
     def _process_command(self, command):
         #self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
@@ -93,9 +94,6 @@ class BackendMantidReducer(BackendWorker):
         reduced = self._reduce(event_data)
         self._merge(reduced)
 
-        print('Rank {} processed {}'.format(MPI.COMM_WORLD.Get_rank(), self._last_processed_packet_index))
-        self._last_processed_packet_index += 1
-
         return True
 
     def _reduce(self, event_data):
@@ -111,7 +109,8 @@ class BackendMantidReducer(BackendWorker):
         mantid.ConvertUnits(InputWorkspace=ws, OutputWorkspace=ws, Target='dSpacing')
         mantid.Rebin(InputWorkspace=ws, OutputWorkspace=ws, Params='0.4,0.1,5')
         # TODO: ADS issues, see Mantid issue #14120. Can we keep this out of ADS?
-        name = 'summed-{}'.format(self._last_processed_packet_index)
+        name = 'summed-{}'.format(self._packet_index)
+        self._packet_index += 1
         mantid.SumSpectra(InputWorkspace=ws, OutputWorkspace=name)
         return AnalysisDataService[name]
 

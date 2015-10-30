@@ -7,7 +7,7 @@ import sys
 import ports
 
 
-publisher = BackendCommandPublisher(1, port=ports.rebin_control)
+publisher = BackendCommandPublisher(port=ports.rebin_control)
 
 
 #def connect_zmq():

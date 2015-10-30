@@ -1,4 +1,3 @@
-import threading
 import time
 import numpy
 import zmq
@@ -11,11 +10,10 @@ from backend_worker import BackendWorker
 
 # master connectes to main event stream and distributes it to all
 # packets are put in a queue
-class EventListener(BackendWorker):
+class BackendEventListener(BackendWorker):
     def __init__(self, command_queue, data_queue_out):
         BackendWorker.__init__(self, command_queue)
         self._data_queue_out = data_queue_out
-        self._comm = MPI.COMM_WORLD
         self.socket = None
 
     def _startup(self):
@@ -31,11 +29,8 @@ class EventListener(BackendWorker):
         # TODO: With this implementation the EventListener will not
         # react to commands unless stream data keeps coming in.
         data = self._get_data_from_stream()
-        #print data
         split_data = self._distribute_stream(data)
-        #print self._last_processed_packet_index, split_data
         self._data_queue_out.put(split_data)
-        self._last_processed_packet_index += 1
         return True
 
     def _connect(self):
