@@ -74,7 +74,8 @@ streamer = FakeEventStreamer(eventGenerator)
 streamer.start()
 
 parameterController = ParameterControlServer(port=ports.streamer_control, parameter_dict=eventGenerator.get_parameter_dict())
-parameterController.start()
+parameterController_thread = threading.Thread(target=parameterController.run)
+parameterController_thread.start()
 
 while threading.active_count() > 0:
     time.sleep(0.1)

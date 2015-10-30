@@ -1,7 +1,7 @@
 from backend_worker import BackendCommandQueue
 from backend_mantid_reducer import BackendMantidReducer
 from backend_mantid_reducer import BackendMantidRebinner
-from backend import ResultPublisher
+from result_publisher import ResultPublisher
 from zmq_queue import ZMQQueueServer
 from zmq_queue import ZMQQueueClient
 from parameter_control_server import ParameterControlServer
@@ -35,7 +35,9 @@ reducer_thread.start()
 
 if MPI.COMM_WORLD.Get_rank() == 0:
     resultPublisher = ResultPublisher(rebinner)
-    resultPublisher.start()
+    resultPublisher_thread = threading.Thread(target=resultPublisher.run)
+    resultPublisher_thread.start()
+
     parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()

@@ -10,6 +10,7 @@ import mantid_reduction
 import mantid_reducer
 from parameter_control_server import ParameterControlServer
 from distributed_parameter_control_server import DistributedParameterControlServer
+from result_publisher import ResultPublisher
 
 
 comm = MPI.COMM_WORLD
@@ -102,47 +103,6 @@ class EventListener(threading.Thread):
             self.resultLock.release()
 
 
-class ResultPublisher(threading.Thread):
-    def __init__(self, eventListener):
-        if comm.Get_rank() != 0:
-            raise Exception('ResultPublisher can run only on rank 0')
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.eventListener = eventListener
-        self.update_rate = 1.0
-        self.socket = None
-
-    def run(self):
-        print "Starting ResultPublisher"
-        self.connect()
-
-        while True:
-            self.eventListener.resultLock.acquire()
-            while self.eventListener.bin_boundaries == None:
-                self.eventListener.resultLock.release()
-                time.sleep(1)
-                self.eventListener.resultLock.acquire()
-            packet = numpy.concatenate((self.eventListener.bin_boundaries, self.eventListener.bin_values))
-            self.socket.send(packet)
-            # TODO is it safe to clear/release here? When is zmq done using the buffer?
-            #self.eventListener.result = None
-            self.eventListener.resultLock.release()
-            time.sleep(self.update_rate)
-
-    def connect(self):
-        context = zmq.Context()
-        self.socket = context.socket(zmq.PUB)
-        uri = 'tcp://*:{0:d}'.format(ports.result_stream)
-        self.socket.bind(uri)
-        print 'Bound to ' + uri
-
-    def get_parameter_dict(self):
-        return {'update_rate':(self.set_update_rate, 'float')}
-
-    def set_update_rate(self, update_rate):
-        self.update_rate = update_rate
-
-
 if __name__ == '__main__':
     mantidReducer = mantid_reducer.MantidReducer()
 
@@ -163,7 +123,8 @@ if __name__ == '__main__':
     if comm.Get_rank() == 0:
         #resultPublisher = ResultPublisher(eventListener)
         resultPublisher = ResultPublisher(mantidRebinner)
-        resultPublisher.start()
+        resultPublisher_thread = threading.Thread(target=resultPublisher.run)
+        resultPublisher_thread.start()
         parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
         parameterController.start()
 
