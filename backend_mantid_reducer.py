@@ -30,7 +30,8 @@ class BackendMantidRebinner(object):
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace=self.histo_ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned', Params=self.current_bin_parameters, PreserveEvents=False)
+        self.histo_ws = AnalysisDataService['accumulated_binned']
         bin_boundaries = deepcopy(self.histo_ws.readX(0))
         bin_values = deepcopy(self.histo_ws.readY(0))
 
@@ -74,11 +75,9 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner = rebinner
 
     def _process_command(self, command):
-        print 'processing command'
         #self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
         self._rebinner.set_bin_parameters(command)
         self._rebinner.rebin()
-        print 'rebin done'
 
     def _can_process_data(self):
         if self._data_queue_in:
