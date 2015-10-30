@@ -4,7 +4,7 @@ from backend_mantid_reducer import BackendMantidRebinner
 from backend import ResultPublisher
 from zmq_queue import ZMQQueueServer
 from zmq_queue import ZMQQueueClient
-from distributed_parameter_control_server import DistributedParameterControlServer
+from parameter_control_server import ParameterControlServer
 import ports
 
 import threading
@@ -34,14 +34,11 @@ reducer = BackendMantidReducer(command_queue, event_queue_in, rebinner)
 reducer_thread = threading.Thread(target=reducer.run)
 reducer_thread.start()
 
-#binController = DistributedParameterControlServer(port=ports.rebin_control, parameter_dict=rebinner.get_parameter_dict())
-#binController.start()
-
 if MPI.COMM_WORLD.Get_rank() == 0:
     resultPublisher = ResultPublisher(rebinner)
-    resultPublisher.set_update_rate(0.2)
     resultPublisher.start()
+    parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict())
+    parameterController.start()
 
 while threading.active_count() > 0:
     time.sleep(0.1)
-
