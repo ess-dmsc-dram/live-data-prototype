@@ -39,7 +39,7 @@ class ResultPublisher(object):
         print 'Bound to ' + uri
 
     def get_parameter_dict(self):
-        return {'update_rate':(self.set_update_rate, 'float')}
+        return {'update_rate':'float'}
 
     @property
     def update_rate(self):

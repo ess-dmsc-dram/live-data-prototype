@@ -125,7 +125,7 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner.update_result(bin_boundaries, bin_values)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':(self.set_bin_parameters, 'str')}
+        return {'bin_parameters':'str'}
 
     @property
     def bin_parameters(self):

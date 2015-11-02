@@ -37,7 +37,7 @@ class ParameterControlServer(object):
         packet = {
                 'version':self.version,
                 'reply_type':'parameters',
-                'payload':{ key: value[1] for key, value in self.controllee.get_parameter_dict.iteritems() }
+                'payload':self._controllee.get_parameter_dict()
                 }
         self.socket.send_json(packet)
 

@@ -55,7 +55,7 @@ class EventGenerator(object):
         self.end_old = self.end_new
 
     def get_parameter_dict(self):
-        return {'rate':(self.set_rate, 'float'), 'chunk_size':(self.set_chunk_size, 'int')}
+        return {'rate':'float', 'chunk_size':'int'}
 
     @property
     def rate(self):
