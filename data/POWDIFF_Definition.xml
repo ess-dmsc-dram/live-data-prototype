@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<instrument xmlns="http://www.mantidproject.org/IDF/1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.mantidproject.org/IDF/1.0 Schema/IDFSchema.xsd"
+  name="POWDIFF"
+  valid-from="2015-05-15 07:41:00"
+  last-modified="2015-05-26 00:00:00">
+  <type name="source" is="Source" />
+  <type name="chopper" is="ChopperPos" />
+  <type name="detector">
+    <component type="element" idlist="detector-elements-idlist">
+      <locations r="2.0000" t="3.0" t-end="160.0" p="0" n-elements="1000" name="element" />
+    </component>
+  </type>
+  <type name="element" is="Detector" />
+  <idlist idname="detector-elements-idlist">
+    <id start="0" end="999" />
+  </idlist>
+  <type name="sample" is="SamplePos" />
+  <component type="source" name="source">
+    <location z="-20.0" />
+  </component>
+  <component type="sample" name="sample">
+    <location />
+  </component>
+  <component type="detector" name="detector">
+    <location />
+  </component>
+</instrument>

@@ -18,3 +18,6 @@ class DistributionFileBasedEventGenerator(object):
     def _load_event_data(self, distribution_file):
         print 'Loading event distribution...'
         self.generator_data = numpy.load(distribution_file)
+
+def create_DistributionFileBasedEventGenerator(filename):
+    return DistributionFileBasedEventGenerator(filename)

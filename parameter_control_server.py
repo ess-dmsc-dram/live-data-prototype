@@ -9,6 +9,9 @@ class ParameterControlServer(object):
         self.version = version
         self.socket = None
 
+    def set_parameter_dict(self, parameter_dict):
+        self.parameter_dict = parameter_dict
+
     def run(self):
         print 'Starting ParameterControlServer...'
         self.connect()

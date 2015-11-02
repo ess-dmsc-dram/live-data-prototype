@@ -1,32 +1,26 @@
 import threading
 import time
-import zmq
+import argparse
 
 import ports
 from parameter_control_server import ParameterControlServer
-from streamer import FakeEventStreamer
-from streamer import EventGenerator
-from streamer import DistributionFileBasedEventGenerator
 from streamer import create_BraggEventGenerator
+from streamer import start_streamer_daemon_threads
 
 
-base_generator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', ('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
-#baseGenerator = DistributionFileBasedEventGenerator('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
+parser = argparse.ArgumentParser()
+parser.add_argument("-i", "--instrument-definition", type=str,  default='data/POWDIFF_Definition.xml', help="Mantid instrument definition file.")
+parser.add_argument("-u", "--unit-cell", type=str,  default='5.431 5.431 5.431', help="Mantid instrument definition file.")
+parser.add_argument("-s", "--space-group", type=str,  default='F d -3 m', help="")
+parser.add_argument("-a", "--atoms", type=str,  default='Si 0 0 0 1.0 0.01', help="")
+parser.add_argument("-[", "--min-plane-distance", type=float,  default=0.5, help="")
+parser.add_argument("-]", "--max-plane-distance", type=float,  default=4.0, help="")
+args = parser.parse_args()
 
-event_generator = EventGenerator(base_generator)
-event_generator_thread = threading.Thread(target=event_generator.run)
-event_generator_thread.daemon = True
-event_generator_thread.start()
+base_generator = create_BraggEventGenerator(args.instrument_definition, (args.unit_cell, args.space_group, args.atoms), args.min_plane_distance, args.max_plane_distance)
+parameter_controller = ParameterControlServer(port=ports.streamer_control)
 
-streamer = FakeEventStreamer(event_generator)
-streamer_thread = threading.Thread(target=streamer.run)
-streamer_thread.daemon = True
-streamer_thread.start()
-
-parameter_controller = ParameterControlServer(port=ports.streamer_control, parameter_dict=event_generator.get_parameter_dict())
-parameter_controller_thread = threading.Thread(target=parameter_controller.run)
-parameter_controller_thread.daemon = True
-parameter_controller_thread.start()
+start_streamer_daemon_threads(base_generator, parameter_controller)
 
 while threading.active_count() > 0:
     time.sleep(0.1)

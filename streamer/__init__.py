@@ -1,5 +1,3 @@
-from fake_streamer import FakeEventStreamer
-from event_generator import EventGenerator
-from distribution_file_based_event_generator import DistributionFileBasedEventGenerator
+from distribution_file_based_event_generator import create_DistributionFileBasedEventGenerator
 from bragg_peak_event_generator import create_BraggEventGenerator
-from bragg_peak_event_generator import CrystalStructure
+from startup import start_streamer_daemon_threads
