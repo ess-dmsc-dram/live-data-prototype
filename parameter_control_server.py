@@ -1,13 +1,16 @@
 import zmq
 
+from command_processor import DefaultCommandProcessor
+
 
 class ParameterControlServer(object):
-    def __init__(self, host='*', port=10000, parameter_dict={}, version=1):
+    def __init__(self, host='*', port=10000, parameter_dict={}, version=1, command_processor=DefaultCommandProcessor()):
         self.host = host
         self.port = port
         self.parameter_dict = parameter_dict
         self.version = version
         self.socket = None
+        self._command_processor = command_processor
 
     def set_parameter_dict(self, parameter_dict):
         self.parameter_dict = parameter_dict
@@ -76,7 +79,7 @@ class ParameterControlServer(object):
         for key in parameters:
             if key in self.parameter_dict:
                 try:
-                    self.parameter_dict[key][0](parameters[key])
+                    self._command_processor.process(self.parameter_dict[key][0], parameters[key])
                     self.send_status('Ok.')
                 except:
                     self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
