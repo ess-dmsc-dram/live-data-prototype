@@ -1,4 +1,3 @@
-from backend_worker import BackendCommandQueue
 from backend_mantid_reducer import BackendMantidReducer
 from backend_mantid_reducer import BackendMantidRebinner
 from result_publisher import ResultPublisher

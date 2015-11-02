@@ -1,4 +1,3 @@
-from backend_worker import BackendCommandQueue
 from backend_event_listener import BackendEventListener
 from zmq_queue import ZMQQueueServer
 import ports
