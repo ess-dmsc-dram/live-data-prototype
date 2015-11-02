@@ -1,9 +1,9 @@
-from mantid.simpleapi import *
+from mantid.simpleapi import CreateSimulationWorkspace
 from mantid.geometry import CrystalStructure, ReflectionGenerator
 import numpy as np
 from functools import partial
 from scipy.constants import m_n, h
-import time
+
 
 class BraggPeakEventGenerator(object):
     def __init__(self, crystal_structure, d_min, d_max, tof_factors):
@@ -46,7 +46,7 @@ class BraggPeakEventGenerator(object):
     def _get_random_detector_id(self):
         return 0
 
-def create_BraggEventGenerator(idf, crystal_structure, dmin, dmax):
+def create_BraggEventGenerator(idf, crystal_structure_parameters, dmin, dmax):
     ws = CreateSimulationWorkspace(Instrument=idf,
                                    BinParams='0.0,0.1,0.2')
 
@@ -60,16 +60,4 @@ def create_BraggEventGenerator(idf, crystal_structure, dmin, dmax):
 
     tof_factors = [2.0 * m_n * s * st / h * 1e-4 for s, st in zip(distances, sin_theta)]
 
-    return BraggPeakEventGenerator(crystal_structure, dmin, dmax, tof_factors)
-
-
-if __name__ == '__main__':
-    cs = CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01")
-
-    gen = create_BraggEventGenerator('/data/additional_mantid_test_data/POWDIFF_Definition.xml', cs, 0.5, 4.0)
-
-    s = time.clock()
-    events = gen.get_events(200000)
-    e = time.clock()
-
-    print e - s
+    return BraggPeakEventGenerator(CrystalStructure(*crystal_structure_parameters), dmin, dmax, tof_factors)

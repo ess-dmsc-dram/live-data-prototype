@@ -8,10 +8,9 @@ from streamer import FakeEventStreamer
 from streamer import EventGenerator
 from streamer import DistributionFileBasedEventGenerator
 from streamer import create_BraggEventGenerator
-from streamer import CrystalStructure
 
 
-base_generator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
+base_generator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', ('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
 #baseGenerator = DistributionFileBasedEventGenerator('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
 
 event_generator = EventGenerator(base_generator)
