@@ -2,8 +2,8 @@ from collections import deque
 
 
 class DefaultCommandProcessor(object):
-    def process(self, setter, argument):
-        setter(argument)
+    def process(self, key, argument, parameter_dict):
+        parameter_dict[key][0](argument)
 
 
 class QueueingCommandProcessor(object):
@@ -16,5 +16,5 @@ class QueueingCommandProcessor(object):
     def get(self):
         return self._command_queue.popleft()
 
-    def process(self, setter, argument):
-        self._command_queue.append((setter, argument))
+    def process(self, key, argument, parameter_dict):
+        self._command_queue.append((key, argument))

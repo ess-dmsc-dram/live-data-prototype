@@ -74,11 +74,10 @@ class BackendMantidReducer(BackendWorker):
         self._data_queue_in = data_queue_in
         self._rebinner = rebinner
         self._packet_index = 0
+        self._commands = {'bin_parameters':(self.set_bin_parameters, 'str')}
 
     def _process_command(self, command):
-        #self._rebinner.set_bin_parameters(command['payload']['bin_parameters'])
-        self._rebinner.set_bin_parameters(command)
-        self._rebinner.rebin()
+        self._commands[command[0]](command[1])
 
     def _can_process_data(self):
         if self._data_queue_in:
@@ -124,3 +123,10 @@ class BackendMantidReducer(BackendWorker):
         bin_values = self._rebinner.histo_ws.readY(0)
 
         self._rebinner.update_result(bin_boundaries, bin_values)
+
+    def get_parameter_dict(self):
+        return self._commands
+
+    def set_bin_parameters(self, parameters):
+        self._rebinner.set_bin_parameters(parameters)
+        self._rebinner.rebin()

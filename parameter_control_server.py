@@ -79,7 +79,7 @@ class ParameterControlServer(object):
         for key in parameters:
             if key in self.parameter_dict:
                 try:
-                    self._command_processor.process(self.parameter_dict[key][0], parameters[key])
+                    self._command_processor.process(key, parameters[key], self.parameter_dict)
                     self.send_status('Ok.')
                 except:
                     self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
