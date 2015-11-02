@@ -8,8 +8,11 @@ import ports
 class ResultPublisher(object):
     def __init__(self, eventListener):
         self.eventListener = eventListener
-        self.update_rate = 1.0
+        self._update_rate = 1.0
         self.socket = None
+
+    def process_instruction(self, instruction, argument):
+        setattr(self, instruction, argument)
 
     def run(self):
         print "Starting ResultPublisher"
@@ -38,5 +41,10 @@ class ResultPublisher(object):
     def get_parameter_dict(self):
         return {'update_rate':(self.set_update_rate, 'float')}
 
-    def set_update_rate(self, update_rate):
-        self.update_rate = update_rate
+    @property
+    def update_rate(self):
+        return self._update_rate
+
+    @update_rate.setter
+    def update_rate(self, update_rate):
+        self._update_rate = update_rate
