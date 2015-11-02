@@ -7,12 +7,15 @@ from backend_heartbeat import BackendHeartbeat
 
 
 class BackendWorker(object):
-    def __init__(self, command_queue, communicator=MPI.COMM_WORLD, root_rank=0):
+    def __init__(self, communicator=MPI.COMM_WORLD, root_rank=0):
         self._comm = communicator
         self._rank = self._comm.Get_rank()
         self._root = root_rank
         self._heartbeat = BackendHeartbeat(self._comm, self._root)
-        self._command_queue = command_queue
+        self._command_queue = deque()
+
+    def process_instruction(self, instruction, argument):
+        self._command_queue.append((instruction, argument))
 
     def run(self):
         self._startup()
@@ -34,7 +37,7 @@ class BackendWorker(object):
         if self._is_root():
             if self._command_queue:
                 # beat says: process command
-                return self._heartbeat.put_user_command(self._command_queue.get()['payload']['bin_parameters'])
+                return self._heartbeat.put_user_command(self._command_queue.popleft())
             elif self._can_process_data():
                 # beat says: process data
                 return self._heartbeat.put_control('process data')

@@ -16,6 +16,6 @@ event_queue_out = ZMQQueueServer(port=event_queue_port)
 event_queue_out_thread = threading.Thread(target=event_queue_out.run)
 event_queue_out_thread.start()
 
-listener = BackendEventListener(None, event_queue_out)
+listener = BackendEventListener(event_queue_out)
 listener_thread = threading.Thread(target=listener.run)
 listener_thread.start()

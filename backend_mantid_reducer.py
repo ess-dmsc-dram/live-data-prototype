@@ -13,7 +13,7 @@ from mantid.api import AnalysisDataService
 from mantid.api import StorageMode
 
 mantid.config['MultiThreaded.MaxCores'] = '1'
-#if comm.Get_rank() != 0:
+#if MPI.COMM_WORLD.Get_rank() != 0:
 mantid.ConfigService.setConsoleLogLevel(0)
 
 
@@ -69,15 +69,15 @@ class BackendMantidRebinner(object):
 
 
 class BackendMantidReducer(BackendWorker):
-    def __init__(self, command_queue, data_queue_in, rebinner):
-        BackendWorker.__init__(self, command_queue)
+    def __init__(self, data_queue_in, rebinner):
+        BackendWorker.__init__(self)
         self._data_queue_in = data_queue_in
         self._rebinner = rebinner
         self._packet_index = 0
-        self._commands = {'bin_parameters':(self.set_bin_parameters, 'str')}
+        self._bin_parameters = '0.4,0.1,5'
 
     def _process_command(self, command):
-        self._commands[command[0]](command[1])
+        setattr(self, command[0], command[1])
 
     def _can_process_data(self):
         if self._data_queue_in:
@@ -125,8 +125,14 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner.update_result(bin_boundaries, bin_values)
 
     def get_parameter_dict(self):
-        return self._commands
+        return {'bin_parameters':(self.set_bin_parameters, 'str')}
 
-    def set_bin_parameters(self, parameters):
+    @property
+    def bin_parameters(self):
+        return self._bin_parameters
+
+    @bin_parameters.setter
+    def bin_parameters(self, parameters):
+        self._bin_parameters = parameters
         self._rebinner.set_bin_parameters(parameters)
         self._rebinner.rebin()

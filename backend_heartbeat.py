@@ -1,4 +1,5 @@
 import struct
+import json
 
 from mpi4py import MPI
 
@@ -33,18 +34,24 @@ class BackendHeartbeat(object):
         return self._broadcast_and_unpack(header)
 
     def put_user_command(self, command):
-        header = self._create_user_command_header(command)
-        return self._broadcast_and_unpack(header)
+        payload = json.dumps(command)
+        header = self._create_user_command_header(payload)
+        return self._broadcast_and_unpack(header, payload)
 
-    def _broadcast_and_unpack(self, header):
+    def _broadcast_and_unpack(self, header, command=None):
         self._comm.Bcast([header, 64, MPI.BYTE], root=self._root)
         packet_type, payload_length, payload = self._unpack_header(header)
         if packet_type == 0:
             return 0, None
+        if packet_type == 2:
+            payload = json.loads(payload)
         # Note: mpi4py lower-case deals with things under the hood,
         # probably at the cost of speed, but long command should be rare.
         if payload_length > 48:
-            return packet_type, self._comm.bcast(command)
+            payload = self._comm.bcast(command)
+            if packet_type == 2:
+                payload = json.loads(payload)
+            return packet_type, payload
         elif payload_length > 0:
             return packet_type, payload
         else:

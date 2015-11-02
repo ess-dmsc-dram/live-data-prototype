@@ -14,7 +14,7 @@ def start_streamer_daemon_threads(base_generator, parameter_controller):
     streamer_thread.daemon = True
     streamer_thread.start()
 
-    parameter_controller.set_parameter_dict(event_generator.get_parameter_dict())
+    parameter_controller.set_controllee(event_generator)
     parameter_controller_thread = Thread(target=parameter_controller.run)
     parameter_controller_thread.daemon = True
     parameter_controller_thread.start()

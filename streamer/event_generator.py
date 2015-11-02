@@ -6,13 +6,14 @@ import numpy
 class EventGenerator(object):
     def __init__(self, generator):
         self.event_data = deque()
-        self.rate = 100000.0
+        self._rate = 100000.0
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
         self.chunk_size = 5000
-        self.scale = 1.0
-        self.size = 5000
         self.generator = generator
+
+    def process_instruction(self, instruction, argument):
+        setattr(self, instruction, argument)
 
     def run(self):
         print 'Starting EventGenerator...'
@@ -54,17 +55,20 @@ class EventGenerator(object):
         self.end_old = self.end_new
 
     def get_parameter_dict(self):
-        return {'rate':(self.set_rate, 'float'), 'chunk_size':(self.set_chunk_size, 'int'), 'scale':(self.set_scale, 'float'), 'size':(self.set_size, 'int')}
+        return {'rate':(self.set_rate, 'float'), 'chunk_size':(self.set_chunk_size, 'int')}
 
-    def set_rate(self, rate):
-        self.rate = rate
+    @property
+    def rate(self):
+        return self._rate
 
-    def set_chunk_size(self, chunk_size):
-        self.chunk_size = chunk_size
+    @rate.setter
+    def rate(self, rate):
+        self._rate = rate
 
-    def set_scale(self, scale):
-        self.scale = scale
+    @property
+    def chunk_size(self):
+        return self._chunk_size
 
-    def set_size(self, size):
-        self.size = size
-
+    @chunk_size.setter
+    def chunk_size(self, chunk_size):
+        self._chunk_size = chunk_size

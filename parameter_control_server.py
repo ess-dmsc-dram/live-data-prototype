@@ -1,19 +1,16 @@
 import zmq
 
-from command_processor import DefaultCommandProcessor
-
 
 class ParameterControlServer(object):
-    def __init__(self, host='*', port=10000, parameter_dict={}, version=1, command_processor=DefaultCommandProcessor()):
+    def __init__(self, controllee=None, host='*', port=10000, version=1):
         self.host = host
         self.port = port
-        self.parameter_dict = parameter_dict
+        self._controllee = controllee
         self.version = version
         self.socket = None
-        self._command_processor = command_processor
 
-    def set_parameter_dict(self, parameter_dict):
-        self.parameter_dict = parameter_dict
+    def set_controllee(self, controllee):
+        self._controllee = controllee
 
     def run(self):
         print 'Starting ParameterControlServer...'
@@ -40,7 +37,7 @@ class ParameterControlServer(object):
         packet = {
                 'version':self.version,
                 'reply_type':'parameters',
-                'payload':{ key: value[1] for key, value in self.parameter_dict.iteritems() }
+                'payload':{ key: value[1] for key, value in self.controllee.get_parameter_dict.iteritems() }
                 }
         self.socket.send_json(packet)
 
@@ -77,9 +74,10 @@ class ParameterControlServer(object):
 
     def process_parameters(self, parameters):
         for key in parameters:
-            if key in self.parameter_dict:
+            if hasattr(self._controllee, key):
                 try:
-                    self._command_processor.process(key, parameters[key], self.parameter_dict)
+                    self._controllee.process_instruction(key, parameters[key])
+                    #self._command_processor.process(key, parameters[key], self.parameter_dict)
                     self.send_status('Ok.')
                 except:
                     self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))

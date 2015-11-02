@@ -6,7 +6,6 @@ from zmq_queue import ZMQQueueServer
 from zmq_queue import ZMQQueueClient
 from parameter_control_server import ParameterControlServer
 import ports
-from command_processor import QueueingCommandProcessor
 
 import threading
 import time
@@ -23,24 +22,20 @@ event_queue_in_thread.start()
 
 rebinner = BackendMantidRebinner()
 
-if MPI.COMM_WORLD.Get_rank() == 0:
-    command_queue = QueueingCommandProcessor()
-    #command_queue = BackendCommandQueue(port=ports.rebin_control)
-    #command_queue_thread = threading.Thread(target=command_queue.run)
-    #command_queue_thread.start()
-else:
-    command_queue = None
-
-reducer = BackendMantidReducer(command_queue, event_queue_in, rebinner)
+reducer = BackendMantidReducer(event_queue_in, rebinner)
 reducer_thread = threading.Thread(target=reducer.run)
 reducer_thread.start()
 
 if MPI.COMM_WORLD.Get_rank() == 0:
+    reducer_controller = ParameterControlServer(controllee=reducer, port=ports.rebin_control)
+    reducer_controller_thread = threading.Thread(target=reducer_controller.run)
+    reducer_controller_thread.start()
+
     resultPublisher = ResultPublisher(rebinner)
     resultPublisher_thread = threading.Thread(target=resultPublisher.run)
     resultPublisher_thread.start()
 
-    parameterController = ParameterControlServer(port=ports.result_publisher_control, parameter_dict=resultPublisher.get_parameter_dict(), command_processor=command_queue)
+    parameterController = ParameterControlServer(controllee=resultPublisher, port=ports.result_publisher_control)
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()
 

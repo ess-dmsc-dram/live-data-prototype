@@ -11,8 +11,8 @@ from backend_worker import BackendWorker
 # master connectes to main event stream and distributes it to all
 # packets are put in a queue
 class BackendEventListener(BackendWorker):
-    def __init__(self, command_queue, data_queue_out):
-        BackendWorker.__init__(self, command_queue)
+    def __init__(self, data_queue_out):
+        BackendWorker.__init__(self)
         self._data_queue_out = data_queue_out
         self.socket = None
 
