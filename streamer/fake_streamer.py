@@ -1,20 +1,10 @@
-import threading
-import time
 import zmq
 
 import ports
-from parameter_control_server import ParameterControlServer
-from event_generator import EventGenerator
-
-from distribution_file_based_event_generator import DistributionFileBasedEventGenerator
-from bragg_peak_event_generator import create_BraggEventGenerator
-from bragg_peak_event_generator import CrystalStructure
 
 
-class FakeEventStreamer(threading.Thread):
+class FakeEventStreamer(object):
     def __init__(self, eventGenerator, version=1):
-        threading.Thread.__init__(self)
-        self.daemon = True
         self.version = version
         self.socket = None
         self.eventGenerator = eventGenerator

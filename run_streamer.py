@@ -12,18 +12,23 @@ from streamer.bragg_peak_event_generator import create_BraggEventGenerator
 from streamer.bragg_peak_event_generator import CrystalStructure
 
 
-baseGenerator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
+base_generator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
 #baseGenerator = DistributionFileBasedEventGenerator('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
 
-eventGenerator = EventGenerator(baseGenerator)
-eventGenerator.start()
+event_generator = EventGenerator(base_generator)
+event_generator_thread = threading.Thread(target=event_generator.run)
+event_generator_thread.daemon = True
+event_generator_thread.start()
 
-streamer = FakeEventStreamer(eventGenerator)
-streamer.start()
+streamer = FakeEventStreamer(event_generator)
+streamer_thread = threading.Thread(target=streamer.run)
+streamer_thread.daemon = True
+streamer_thread.start()
 
-parameterController = ParameterControlServer(port=ports.streamer_control, parameter_dict=eventGenerator.get_parameter_dict())
-parameterController_thread = threading.Thread(target=parameterController.run)
-parameterController_thread.start()
+parameter_controller = ParameterControlServer(port=ports.streamer_control, parameter_dict=event_generator.get_parameter_dict())
+parameter_controller_thread = threading.Thread(target=parameter_controller.run)
+parameter_controller_thread.daemon = True
+parameter_controller_thread.start()
 
 while threading.active_count() > 0:
     time.sleep(0.1)

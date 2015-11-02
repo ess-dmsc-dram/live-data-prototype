@@ -1,13 +1,10 @@
-import threading
 from collections import deque
 import time
 import numpy
 
 
-class EventGenerator(threading.Thread):
+class EventGenerator(object):
     def __init__(self, generator):
-        threading.Thread.__init__(self)
-        self.daemon = True
         self.event_data = deque()
         self.rate = 100000.0
         # do things on per-pulse basis?
