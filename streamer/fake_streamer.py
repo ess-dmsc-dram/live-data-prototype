@@ -63,19 +63,3 @@ class FakeEventStreamer(threading.Thread):
                 self.send_event_data(pulse_id=0, event_data=event_data)
             else:
                 print 'Unknown command ' + command
-
-baseGenerator = create_BraggEventGenerator('/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', CrystalStructure('5.431 5.431 5.431', 'F d -3 m', "Si 0 0 0 1.0 0.01"), 0.5, 4.0)
-#baseGenerator = DistributionFileBasedEventGenerator('/home/simon/data/fake_powder_diffraction_data/event_distribution.npy')
-
-eventGenerator = EventGenerator(baseGenerator)
-eventGenerator.start()
-
-streamer = FakeEventStreamer(eventGenerator)
-streamer.start()
-
-parameterController = ParameterControlServer(port=ports.streamer_control, parameter_dict=eventGenerator.get_parameter_dict())
-parameterController_thread = threading.Thread(target=parameterController.run)
-parameterController_thread.start()
-
-while threading.active_count() > 0:
-    time.sleep(0.1)
