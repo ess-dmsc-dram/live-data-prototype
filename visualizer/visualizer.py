@@ -2,11 +2,8 @@ from collections import deque
 import zmq
 
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.Qt import QtCore
 import numpy
-
-import ports
-import command_line_parser
 
 
 class Plotter(object):
@@ -28,9 +25,11 @@ class Plotter(object):
 class DataListener(QtCore.QObject):
     new_data = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, host, port):
         QtCore.QObject.__init__(self)
         self.data = deque()
+        self._host = host
+        self._port = port
 
     def run(self):
         print 'Starting DataListener...'
@@ -43,7 +42,7 @@ class DataListener(QtCore.QObject):
     def connect(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
-        uri = 'tcp://{0}:{1:d}'.format(command_line_parser.get_host(), ports.result_stream)
+        uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
         print 'Substribed to result publisher at ' + uri
