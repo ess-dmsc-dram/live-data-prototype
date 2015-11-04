@@ -10,9 +10,6 @@ import ports
 import command_line_parser
 
 
-datatype = numpy.float64
-
-
 class Plotter(object):
     def __init__(self, dataListener):
         self.dataListener = dataListener
@@ -23,8 +20,8 @@ class Plotter(object):
         self.curve = self.plt1.plot(stepMode=True, fillLevel=0, brush=(0,0,255,150))
 
     def update(self):
-        while dataListener.data:
-            x,y = dataListener.data.popleft()
+        while self.dataListener.data:
+            x,y = self.dataListener.data.popleft()
             self.curve.setData(x, y)
         self.plt1.enableAutoRange('xy', False)
 
@@ -55,21 +52,6 @@ class DataListener(Thread, QtCore.QObject):
         print 'Substribed to result publisher at ' + uri
 
     def get_histogram(self):
-        data = numpy.frombuffer(self.socket.recv(), datatype)
+        data = numpy.frombuffer(self.socket.recv(), numpy.float64)
         x,y = numpy.array_split(data, 2)
         return x,y
-
-
-dataListener = DataListener()
-plotter = Plotter(dataListener)
-
-
-dataListener.new_data.connect(plotter.update)
-dataListener.start()
-
-
-## Start Qt event loop unless running in interactive mode or using pyside.
-if __name__ == '__main__':
-    import sys
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()
