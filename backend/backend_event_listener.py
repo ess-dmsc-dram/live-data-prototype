@@ -3,18 +3,18 @@ import numpy
 import zmq
 from mpi4py import MPI
 
-import ports
-import command_line_parser
 from backend_worker import BackendWorker
 
 
 # master connectes to main event stream and distributes it to all
 # packets are put in a queue
 class BackendEventListener(BackendWorker):
-    def __init__(self, data_queue_out):
+    def __init__(self, data_queue_out, host, port):
         BackendWorker.__init__(self)
         self._data_queue_out = data_queue_out
         self.socket = None
+        self._host = host
+        self._port = port
 
     def _startup(self):
         print 'Starting EventListener...'
@@ -37,7 +37,7 @@ class BackendEventListener(BackendWorker):
         if self._comm.Get_rank() == 0:
             context = zmq.Context()
             self.socket = context.socket(zmq.REQ)
-            uri = 'tcp://{0}:{1:d}'.format(command_line_parser.get_host(), ports.event_stream)
+            uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
             self.socket.connect(uri)
             print 'Connected to event streamer at ' + uri
 
