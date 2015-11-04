@@ -77,7 +77,6 @@ class ParameterControlServer(object):
             if hasattr(self._controllee, key):
                 try:
                     self._controllee.process_instruction(key, parameters[key])
-                    #self._command_processor.process(key, parameters[key], self.parameter_dict)
                     self.send_status('Ok.')
                 except:
                     self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
