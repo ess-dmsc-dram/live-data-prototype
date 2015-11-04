@@ -2,18 +2,18 @@ from collections import deque
 import time
 import numpy
 
+from controllable import Controllable
 
-class EventGenerator(object):
+
+class EventGenerator(Controllable):
     def __init__(self, generator):
+        super(EventGenerator, self).__init__(type(self).__name__)
         self.event_data = deque()
         self._rate = 100000.0
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
         self.chunk_size = 5000
         self.generator = generator
-
-    def process_instruction(self, instruction, argument):
-        setattr(self, instruction, argument)
 
     def run(self):
         print 'Starting EventGenerator...'

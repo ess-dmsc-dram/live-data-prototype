@@ -4,10 +4,12 @@ import time
 from mpi4py import MPI
 
 from backend_heartbeat import BackendHeartbeat
+from controllable import Controllable
 
 
-class BackendWorker(object):
+class BackendWorker(Controllable):
     def __init__(self, communicator=MPI.COMM_WORLD, root_rank=0):
+        super(BackendWorker, self).__init__(type(self).__name__)
         self._comm = communicator
         self._rank = self._comm.Get_rank()
         self._root = root_rank

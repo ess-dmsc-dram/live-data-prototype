@@ -3,16 +3,15 @@ import numpy
 import zmq
 
 import ports
+from controllable import Controllable
 
 
-class ResultPublisher(object):
+class ResultPublisher(Controllable):
     def __init__(self, eventListener):
+        super(ResultPublisher, self).__init__(type(self).__name__)
         self.eventListener = eventListener
         self._update_rate = 1.0
         self.socket = None
-
-    def process_instruction(self, instruction, argument):
-        setattr(self, instruction, argument)
 
     def run(self):
         print "Starting ResultPublisher"
