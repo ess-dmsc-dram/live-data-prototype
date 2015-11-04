@@ -55,7 +55,7 @@ class EventGenerator(Controllable):
         self.end_old = self.end_new
 
     def get_parameter_dict(self):
-        return {'rate':'float', 'chunk_size':'int'}
+        return {'rate':'float', 'chunk_size':'int', 'queue_status':'int'}
 
     @property
     def rate(self):
@@ -72,3 +72,7 @@ class EventGenerator(Controllable):
     @chunk_size.setter
     def chunk_size(self, chunk_size):
         self._chunk_size = chunk_size
+
+    @property
+    def queue_status(self):
+        return len(self.event_data)
