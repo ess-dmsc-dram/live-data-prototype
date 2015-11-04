@@ -64,7 +64,7 @@ class BraggPeakEventGenerator(Controllable):
         self._update_distributions_and_weights()
 
     def _update_distributions_and_weights(self):
-        crystal_structure = CrystalStructure(self._unit_cell, self._space_group, self._atoms)
+        crystal_structure = CrystalStructure(str(self._unit_cell), str(self._space_group), str(self._atoms))
         reflection_generator = ReflectionGenerator(crystal_structure)
 
         # Calculate all unique reflections within the specified resolution limits, including structure factors

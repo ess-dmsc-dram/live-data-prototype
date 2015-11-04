@@ -26,7 +26,7 @@ reducer_thread = threading.Thread(target=reducer.run)
 reducer_thread.start()
 
 if MPI.COMM_WORLD.Get_rank() == 0:
-    reducer_controller = ParameterControlServer(controllee=reducer, port=ports.rebin_control)
+    reducer_controller = ParameterControlServer(controllees=[reducer], port=ports.rebin_control)
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
     reducer_controller_thread.start()
 
@@ -34,7 +34,7 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     resultPublisher_thread = threading.Thread(target=resultPublisher.run)
     resultPublisher_thread.start()
 
-    parameterController = ParameterControlServer(controllee=resultPublisher, port=ports.result_publisher_control)
+    parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()
 

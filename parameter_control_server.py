@@ -2,15 +2,26 @@ import zmq
 
 
 class ParameterControlServer(object):
-    def __init__(self, controllee=None, host='*', port=10000, version=1):
+    def __init__(self, controllees=[], host='*', port=10000, version=1):
         self.host = host
         self.port = port
-        self._controllee = controllee
+        self.set_controllees(controllees)
         self.version = version
         self.socket = None
 
-    def set_controllee(self, controllee):
-        self._controllee = controllee
+    def add_controllee(self, controllee):
+        name = controllee.name
+        if name in self._controllees:
+            raise RuntimeError('Duplicate controllee name {}'.format(name))
+        self._controllees[name] = controllee
+
+    def add_controllees(self, controllees):
+        for c in controllees:
+            self.add_controllee(c)
+
+    def set_controllees(self, controllees):
+        self._controllees = {}
+        self.add_controllees(controllees)
 
     def run(self):
         print 'Starting ParameterControlServer...'
@@ -37,7 +48,7 @@ class ParameterControlServer(object):
         packet = {
                 'version':self.version,
                 'reply_type':'parameters',
-                'payload':self._controllee.get_parameter_dict()
+                'payload':{ key:value.get_parameter_dict() for key,value in self._controllees.iteritems() }
                 }
         self.socket.send_json(packet)
 
@@ -72,13 +83,18 @@ class ParameterControlServer(object):
         else:
             self.send_status('Unknown control command {0}, ignoring.'.format(command))
 
-    def process_parameters(self, parameters):
-        for key in parameters:
-            if hasattr(self._controllee, key):
-                try:
-                    self._controllee.process_instruction(key, parameters[key])
-                    self.send_status('Ok.')
-                except:
-                    self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
-            else:
-                self.send_status('Unknown key {0}, ignoring.'.format(key))
+    def process_parameters(self, all_parameters):
+        for controllee_name, parameters in all_parameters.iteritems():
+            try:
+                controllee = self._controllees[controllee_name]
+                for key in parameters:
+                    if hasattr(controllee, key):
+                        try:
+                            controllee.process_instruction(key, parameters[key])
+                            self.send_status('Ok.')
+                        except:
+                            self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
+                    else:
+                        self.send_status('Unknown key {0}, ignoring.'.format(key))
+            except KeyError:
+                self.send_status('Unknown controllee {0}, ignoring.'.format(controllee_name))

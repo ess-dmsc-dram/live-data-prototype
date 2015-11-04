@@ -20,7 +20,7 @@ def set_bin_parameters():
     socket.send_json({'version':1, 'request_type':'control','payload':'send_parameters'})
     status = socket.recv()
     print status
-    socket.send_json({'version':1, 'request_type':'set_parameters','payload':{'bin_parameters':str(sys.argv[1])}})
+    socket.send_json({'version':1, 'request_type':'set_parameters','payload':{'BackendMantidReducer':{'bin_parameters':str(sys.argv[1])}}})
     status = socket.recv()
     print status
 
