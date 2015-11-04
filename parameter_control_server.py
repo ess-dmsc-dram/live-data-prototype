@@ -60,6 +60,14 @@ class ParameterControlServer(object):
                 }
         self.socket.send_json(packet)
 
+    def send_values(self, values):
+        packet = {
+                'version':self.version,
+                'reply_type':'values',
+                'payload':values
+                }
+        self.socket.send_json(packet)
+
     def check_version(self, packet):
         version = packet['version']
         if version != self.version:
@@ -72,8 +80,10 @@ class ParameterControlServer(object):
         payload = packet['payload']
         if request_type == 'control':
             self.process_command(payload)
+        elif request_type == 'get_values':
+            self.process_get_values(payload)
         elif request_type == 'set_parameters':
-            self.process_parameters(payload)
+            self.process_set_parameters(payload)
         else:
             self.send_status('Unknown request type {0}, ignoring.'.format(request_type))
 
@@ -83,7 +93,7 @@ class ParameterControlServer(object):
         else:
             self.send_status('Unknown control command {0}, ignoring.'.format(command))
 
-    def process_parameters(self, all_parameters):
+    def process_set_parameters(self, all_parameters):
         for controllee_name, parameters in all_parameters.iteritems():
             try:
                 controllee = self._controllees[controllee_name]
@@ -98,3 +108,21 @@ class ParameterControlServer(object):
                         self.send_status('Unknown key {0}, ignoring.'.format(key))
             except KeyError:
                 self.send_status('Unknown controllee {0}, ignoring.'.format(controllee_name))
+
+    def process_get_values(self, all_parameters):
+        reply = {}
+        for controllee_name, parameters in all_parameters.iteritems():
+            try:
+                reply[controllee_name] = {}
+                controllee = self._controllees[controllee_name]
+                for key in parameters:
+                    if hasattr(controllee, key):
+                        try:
+                            reply[controllee_name][key] = getattr(controllee, key)
+                        except:
+                            pass
+                    else:
+                        pass
+            except KeyError:
+                pass
+        self.send_values(reply)
