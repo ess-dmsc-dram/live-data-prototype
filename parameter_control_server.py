@@ -8,6 +8,10 @@ class ParameterControlServer(object):
         self.set_controllees(controllees)
         self.version = version
         self.socket = None
+        self._request_type_map = {}
+        self._request_type_map['control'] = self.process_command
+        self._request_type_map['get_values'] = self.process_get_values
+        self._request_type_map['set_parameters'] = self.process_set_parameters
 
     def add_controllee(self, controllee):
         name = controllee.name
@@ -78,13 +82,9 @@ class ParameterControlServer(object):
     def process_request(self, packet):
         request_type = packet['request_type']
         payload = packet['payload']
-        if request_type == 'control':
-            self.process_command(payload)
-        elif request_type == 'get_values':
-            self.process_get_values(payload)
-        elif request_type == 'set_parameters':
-            self.process_set_parameters(payload)
-        else:
+        try:
+            self._request_type_map[request_type](payload)
+        except KeyError:
             self.send_status('Unknown request type {0}, ignoring.'.format(request_type))
 
     def process_command(self, command):
