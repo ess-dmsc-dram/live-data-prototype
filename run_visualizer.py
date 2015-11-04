@@ -1,14 +1,18 @@
+from threading import Thread
+
 from pyqtgraph.Qt import QtGui
 
 from visualizer import DataListener
 from visualizer import Plotter
 
 
-dataListener = DataListener()
-plotter = Plotter(dataListener)
+data_listener = DataListener()
+data_listener_thread = Thread(target=data_listener.run)
+data_listener_thread.daemon = True
+plotter = Plotter(data_listener)
 
-dataListener.new_data.connect(plotter.update)
-dataListener.start()
+data_listener.new_data.connect(plotter.update)
+data_listener_thread.start()
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':

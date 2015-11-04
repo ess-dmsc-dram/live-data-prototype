@@ -1,4 +1,3 @@
-from threading import Thread
 from collections import deque
 import zmq
 
@@ -26,12 +25,10 @@ class Plotter(object):
         self.plt1.enableAutoRange('xy', False)
 
 
-class DataListener(Thread, QtCore.QObject):
+class DataListener(QtCore.QObject):
     new_data = QtCore.pyqtSignal()
 
     def __init__(self):
-        Thread.__init__(self)
-        self.daemon = True
         QtCore.QObject.__init__(self)
         self.data = deque()
 
