@@ -17,6 +17,7 @@ class ParameterControlServer(object):
         name = controllee.name
         if name in self._controllees:
             raise RuntimeError('Duplicate controllee name {}'.format(name))
+        self._verify_controllee_attributes(controllee)
         self._controllees[name] = controllee
 
     def add_controllees(self, controllees):
@@ -35,6 +36,13 @@ class ParameterControlServer(object):
             packet = self.recv_packet()
             if self.check_version(packet):
                 self.process_request(packet)
+
+    def _verify_controllee_attributes(self, controllee):
+        keys = controllee.get_parameter_dict().keys()
+        for key in keys:
+            value = getattr(controllee, key)
+            if value is None:
+                raise RuntimeError('Parameter "{}" in controllee {} is None. Needs to be initialized.'.format(key, controllee.name))
 
     def connect(self):
         context = zmq.Context()
