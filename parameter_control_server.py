@@ -49,26 +49,16 @@ class ParameterControlServer(object):
         return packet
 
     def send_parameters(self):
-        packet = {
-                'version':self.version,
-                'reply_type':'parameters',
-                'payload':{ key:value.get_parameter_dict() for key,value in self._controllees.iteritems() }
-                }
-        self.socket.send_json(packet)
+        self._reply('parameters', { key:value.get_parameter_dict() for key,value in self._controllees.iteritems() })
 
     def send_status(self, status):
-        packet = {
-                'version':self.version,
-                'reply_type':'status',
-                'payload':status
-                }
-        self.socket.send_json(packet)
+        self._reply('status', status)
 
-    def send_values(self, values):
+    def _reply(self, reply_type, payload):
         packet = {
                 'version':self.version,
-                'reply_type':'values',
-                'payload':values
+                'reply_type':reply_type,
+                'payload':payload
                 }
         self.socket.send_json(packet)
 
@@ -125,4 +115,4 @@ class ParameterControlServer(object):
                         pass
             except KeyError:
                 pass
-        self.send_values(reply)
+        self._reply('values', reply)
