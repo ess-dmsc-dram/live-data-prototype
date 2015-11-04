@@ -1,8 +1,12 @@
+from threading import Lock
+
 from mantid.simpleapi import CreateSimulationWorkspace
 from mantid.geometry import CrystalStructure, ReflectionGenerator
 import numpy as np
 from functools import partial
 from scipy.constants import m_n, h
+
+from controllable import Controllable
 
 
 class TOFFactorCalculator(object):
@@ -30,9 +34,11 @@ class TOFFactorCalculator(object):
         return [2.0 * m_n * s * st / h * 1e-4 for s, st in zip(distances, sin_theta)]
 
 
-class BraggPeakEventGenerator(object):
+class BraggPeakEventGenerator(Controllable):
     def __init__(self, crystal_structure_parameters, d_min, d_max, tof_factor_calculator):
-        super(BraggPeakEventGenerator, self).__init__()
+        super(BraggPeakEventGenerator, self).__init__(type(self).__name__)
+
+        self._parameter_lock = Lock()
 
         # Peak shape related parameters
         self._peak_distributions = None
@@ -71,10 +77,12 @@ class BraggPeakEventGenerator(object):
 
         # Calculate weights as F^2 * multiplicity and normalize so that Sum(weights) = 1
         weights = np.array([x * y for x, y in zip(structure_factors, multiplicities)])
+        self._parameter_lock.acquire()
         self._peak_weights = weights / sum(weights)
 
         d_values = reflection_generator.getDValues(unique_hkls)
         self._peak_distributions = [partial(np.random.normal, loc=d, scale=self._relative_sigma * d) for d in d_values]
+        self._parameter_lock.release()
 
     def get_events(self, size):
         d_values = self._get_random_d_values(size)
@@ -86,7 +94,10 @@ class BraggPeakEventGenerator(object):
                                           formats=['int32', 'float32'])
 
     def _get_random_d_values(self, size):
-        return [x() for x in np.random.choice(self._peak_distributions, size=size, p=self._peak_weights)]
+        self._parameter_lock.acquire()
+        tmp = [x() for x in np.random.choice(self._peak_distributions, size=size, p=self._peak_weights)]
+        self._parameter_lock.release()
+        return tmp
 
     def get_parameter_dict(self):
         return {'unit_cell': 'str', 'space_group': 'str', 'atoms': 'str',
