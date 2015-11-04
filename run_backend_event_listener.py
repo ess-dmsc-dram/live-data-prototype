@@ -1,5 +1,5 @@
-from backend_event_listener import BackendEventListener
-from zmq_queue import ZMQQueueServer
+from backend import BackendEventListener
+from backend import ZMQQueueServer
 import ports
 
 import threading

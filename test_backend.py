@@ -1,8 +1,8 @@
-from backend_mantid_reducer import BackendMantidReducer
-from backend_mantid_reducer import BackendMantidRebinner
-from result_publisher import ResultPublisher
-from zmq_queue import ZMQQueueServer
-from zmq_queue import ZMQQueueClient
+from backend import BackendMantidReducer
+from backend import BackendMantidRebinner
+from backend import ResultPublisher
+from backend import ZMQQueueServer
+from backend import ZMQQueueClient
 from parameter_control_server import ParameterControlServer
 import ports
 
