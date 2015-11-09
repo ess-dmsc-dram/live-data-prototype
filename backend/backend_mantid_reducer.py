@@ -37,6 +37,11 @@ class BackendMantidRebinner(object):
 
         self.update_result(bin_boundaries, bin_values)
 
+    def reset(self):
+        mantid.DeleteWorkspace(Workspace='accumulated')
+        mantid.DeleteWorkspace(Workspace='accumulated_binned')
+        self._init_workspace()
+
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
 
@@ -129,7 +134,7 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner.update_result(bin_boundaries, bin_values)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':'str'}
+        return {'bin_parameters':'str', 'reset':'trigger'}
 
     @property
     def bin_parameters(self):
@@ -140,3 +145,11 @@ class BackendMantidReducer(BackendWorker):
         self._bin_parameters = parameters
         self._rebinner.set_bin_parameters(parameters)
         self._rebinner.rebin()
+
+    @property
+    def reset(self):
+        return False
+
+    @reset.setter
+    def reset(self, dummy):
+        self._rebinner.reset()
