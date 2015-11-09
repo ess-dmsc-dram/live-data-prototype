@@ -90,12 +90,13 @@ class BackendMantidReducer(BackendWorker):
             return False
         event_data = numpy.frombuffer(self._data_queue_in.get(), dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
-        reduced = self._reduce(event_data)
+        event_ws = self._create_workspace_from_events(event_data)
+        reduced = self._reduce(event_ws)
         self._merge(reduced)
 
         return True
 
-    def _reduce(self, event_data):
+    def _create_workspace_from_events(self, event_data):
         ws = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
         AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws =  AnalysisDataService['POWDIFF_test']
@@ -105,6 +106,9 @@ class BackendMantidReducer(BackendWorker):
         ws.setStorageMode(StorageMode.Distributed)
         for i in event_data:
             ws.getEventList(int(i[0])).addEventQuickly(float(i[1]))
+        return ws
+
+    def _reduce(self, ws):
         mantid.ConvertUnits(InputWorkspace=ws, OutputWorkspace=ws, Target='dSpacing')
         mantid.Rebin(InputWorkspace=ws, OutputWorkspace=ws, Params='0.4,0.1,5')
         # TODO: ADS issues, see Mantid issue #14120. Can we keep this out of ADS?
