@@ -5,6 +5,9 @@ class Controllable(object):
     def process_instruction(self, instruction, argument):
         setattr(self, instruction, argument)
 
+    def process_trigger(self, instruction):
+        getattr(self, instruction)()
+
     def get_parameter_dict(self):
         return {}
 

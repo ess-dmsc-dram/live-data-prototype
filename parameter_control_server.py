@@ -12,6 +12,7 @@ class ParameterControlServer(object):
         self._request_type_map['control'] = self.process_command
         self._request_type_map['get_values'] = self.process_get_values
         self._request_type_map['set_parameters'] = self.process_set_parameters
+        self._request_type_map['trigger_actions'] = self.process_trigger_actions
 
     def add_controllee(self, controllee):
         name = controllee.name
@@ -116,7 +117,9 @@ class ParameterControlServer(object):
                 for key in parameters:
                     if hasattr(controllee, key):
                         try:
-                            reply[controllee_name][key] = getattr(controllee, key)
+                            tmp = getattr(controllee, key)
+                            if not hasattr(tmp, '__call__'):
+                                reply[controllee_name][key] = getattr(controllee, key)
                         except:
                             pass
                     else:
@@ -124,3 +127,19 @@ class ParameterControlServer(object):
             except KeyError:
                 pass
         self._reply('values', reply)
+
+    def process_trigger_actions(self, all_parameters):
+        for controllee_name, parameters in all_parameters.iteritems():
+            try:
+                controllee = self._controllees[controllee_name]
+                for key in parameters:
+                    if hasattr(controllee, key):
+                        try:
+                            controllee.process_trigger(key)
+                            self.send_status('Ok.')
+                        except:
+                            self.send_status('Internal error when setting value for key {0}, ignoring.'.format(key))
+                    else:
+                        self.send_status('Unknown key {0}, ignoring.'.format(key))
+            except KeyError:
+                self.send_status('Unknown controllee {0}, ignoring.'.format(controllee_name))

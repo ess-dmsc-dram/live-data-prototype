@@ -14,11 +14,14 @@ class EventGenerator(Controllable):
         # each chunk must have a pulse ID!
         self.chunk_size = 5000
         self.generator = generator
+        self._paused = False
 
     def run(self):
         print 'Starting EventGenerator...'
         self.init_sleep_time()
         while True:
+            while self._paused:
+                time.sleep(0.01)
             self.generate_events()
             self.sleep()
             self.update_sleep_time()
@@ -55,7 +58,7 @@ class EventGenerator(Controllable):
         self.end_old = self.end_new
 
     def get_parameter_dict(self):
-        return {'rate':'float', 'chunk_size':'int', 'queue_status':'int'}
+        return {'rate':'float', 'chunk_size':'int', 'queue_status':'int', 'pause':'trigger'}
 
     @property
     def rate(self):
@@ -76,3 +79,6 @@ class EventGenerator(Controllable):
     @property
     def queue_status(self):
         return len(self.event_data)
+
+    def pause(self):
+        self._paused = not self._paused
