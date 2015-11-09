@@ -22,12 +22,12 @@ class BackendMantidRebinner(object):
     def __init__(self):
         self._comm = MPI.COMM_WORLD
         self.resultLock = threading.Lock()
-        self.result_index = 0
-        self.bin_boundaries = None
-        self.bin_values = None
+        self.result_indices = [0]
+        self.bin_boundaries = [None]
+        self.bin_values = [None]
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
-        self._init_workspace()
+        self._init_workspace(self.result_indices[-1])
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
@@ -39,12 +39,25 @@ class BackendMantidRebinner(object):
         self.update_result(bin_boundaries, bin_values)
 
     def reset(self):
-        mantid.DeleteWorkspace(Workspace='accumulated')
-        mantid.DeleteWorkspace(Workspace='accumulated_binned')
-        self._init_workspace()
+        for i in self.result_indices:
+            mantid.DeleteWorkspace(Workspace='accumulated-{}'.format(i))
+            mantid.DeleteWorkspace(Workspace='accumulated_binned-{}'.format(i))
         self.resultLock.acquire()
-        self.result_index += 1
+        self.result_indices = [self.result_indices[-1] + 1]
+        self.bin_boundaries = [None]
+        self.bin_values = [None]
         self.resultLock.release()
+        self._init_workspace(self.result_indices[-1])
+
+    def next(self):
+        #mantid.RenameWorkspace(InputWorkspace='accumulated', OutputWorkspace='accumulated-{}'.format(self.result_indices[-1]))
+        #mantid.RenameWorkspace(InputWorkspace='accumulated_binned', OutputWorkspace='accumulated_binned-{}'.format(self.result_indices[-1]))
+        self.resultLock.acquire()
+        self.result_indices.append(self.result_indices[-1] + 1)
+        self.bin_boundaries.append(None)
+        self.bin_values.append(None)
+        self.resultLock.release()
+        self._init_workspace(self.result_indices[-1])
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
@@ -54,13 +67,13 @@ class BackendMantidRebinner(object):
 
     def update_result(self, bin_boundaries, bin_values):
         self.resultLock.acquire()
-        self.bin_boundaries = bin_boundaries
+        self.bin_boundaries[-1] = bin_boundaries
         gathered = self._comm.gather(bin_values, root=0)
         if self._comm.Get_rank() == 0:
-            self.bin_values = sum(gathered)
+            self.bin_values[-1] = sum(gathered)
         self.resultLock.release()
 
-    def _init_workspace(self):
+    def _init_workspace(self, index):
         tmp = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
         AnalysisDataService.Instance().addOrReplace('tmp', tmp)
         tmp =  AnalysisDataService['tmp']
@@ -70,11 +83,11 @@ class BackendMantidRebinner(object):
         tmp.setStorageMode(StorageMode.Distributed)
         mantid.ConvertUnits(InputWorkspace=tmp, OutputWorkspace=tmp, Target='dSpacing')
         mantid.Rebin(InputWorkspace=tmp, OutputWorkspace=tmp, Params=self.current_bin_parameters)
-        mantid.SumSpectra(InputWorkspace=tmp, OutputWorkspace='accumulated')
+        mantid.SumSpectra(InputWorkspace=tmp, OutputWorkspace='accumulated-{}'.format(index))
         mantid.DeleteWorkspace(Workspace='tmp')
-        self.ws = AnalysisDataService['accumulated']
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned', Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_ws = AnalysisDataService['accumulated_binned']
+        self.ws = AnalysisDataService['accumulated-{}'.format(index)]
+        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(index), Params=self.current_bin_parameters, PreserveEvents=False)
+        self.histo_ws = AnalysisDataService['accumulated_binned-{}'.format(index)]
 
 
 class BackendMantidReducer(BackendWorker):
@@ -138,7 +151,7 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner.update_result(bin_boundaries, bin_values)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':'str', 'reset':'trigger'}
+        return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger'}
 
     @property
     def bin_parameters(self):
@@ -157,3 +170,11 @@ class BackendMantidReducer(BackendWorker):
     @reset.setter
     def reset(self, dummy):
         self._rebinner.reset()
+
+    @property
+    def next(self):
+        return False
+
+    @next.setter
+    def next(self, dummy):
+        self._rebinner.next()
