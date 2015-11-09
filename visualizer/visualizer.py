@@ -8,22 +8,20 @@ import numpy
 
 class Plotter(object):
     def __init__(self, dataListener):
-        self._color_index = None
         self.dataListener = dataListener
         self.win = pg.GraphicsWindow()
         self.win.resize(800,350)
         self.win.setWindowTitle('pyqtgraph example: Histogram')
         self.plt1 = self.win.addPlot()
         self.plt1.addLegend()
-        self.curves = []
+        self.curves = {}
 
     def update(self):
         while self.dataListener.data:
             index,x,y = self.dataListener.data.popleft()
-            if index is not self._color_index:
-                self.curves.append(self.plt1.plot(stepMode=True, pen=(index), name=str(index)))
-                self._color_index = index
-            self.curves[-1].setData(x, y)
+            if not index in self.curves:
+                self.curves[index] = self.plt1.plot(stepMode=True, pen=(index), name=str(index))
+            self.curves[index].setData(x, y)
         self.plt1.enableAutoRange('xy', False)
 
 
