@@ -22,6 +22,7 @@ class BackendMantidRebinner(object):
     def __init__(self):
         self._comm = MPI.COMM_WORLD
         self.resultLock = threading.Lock()
+        self.result_index = 0
         self.bin_boundaries = None
         self.bin_values = None
         self.current_bin_parameters = '0.4,0.1,5'
@@ -41,6 +42,9 @@ class BackendMantidRebinner(object):
         mantid.DeleteWorkspace(Workspace='accumulated')
         mantid.DeleteWorkspace(Workspace='accumulated_binned')
         self._init_workspace()
+        self.resultLock.acquire()
+        self.result_index += 1
+        self.resultLock.release()
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}

@@ -24,6 +24,7 @@ class ResultPublisher(Controllable):
                 time.sleep(1)
                 self.eventListener.resultLock.acquire()
             packet = numpy.concatenate((self.eventListener.bin_boundaries, self.eventListener.bin_values))
+            self.socket.send_json(self.eventListener.result_index, flags=zmq.SNDMORE)
             self.socket.send(packet)
             # TODO is it safe to clear/release here? When is zmq done using the buffer?
             #self.eventListener.result = None
