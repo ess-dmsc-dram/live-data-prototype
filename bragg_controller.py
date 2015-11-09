@@ -1,31 +1,27 @@
 import zmq
 import sys
+import argparse
+
+from parameter_control_client import ParameterControlClient
+from general_parameter_controller import GeneralParameterController
 
 HOST = 'localhost'
 PORT = 10002
 
-def connect_zmq():
-    context = zmq.Context()
-    socket = context.socket(zmq.REQ)
-    socket.connect("tcp://%s:%s" % (HOST, PORT))
-    return socket
+parser = argparse.ArgumentParser()
+parser.add_argument('-l', '--list-parameters', action='store_true',
+                    help='Show a list of available parameters and their types.')
+parser.add_argument('-c', '--controllee', type=str, default='BraggPeakEventGenerator', help='Specify controllee.')
+parser.add_argument('parameter_name', help='Name of parameter to set.')
+parser.add_argument('parameter_value', help='New parameter value.')
 
-socket = connect_zmq()
+args = parser.parse_args()
 
-def set(arg, value):
-    socket.send_json({'version':1, 'request_type':'control','payload':'send_parameters'})
-    reply = socket.recv_json()
-    print reply
-    socket.send_json({'version':1, 'request_type':'get_values','payload':reply['payload']})
-    reply = socket.recv_json()
-    print reply
 
-    arg_type = type(reply['payload']['BraggPeakEventGenerator'][arg])
+control_client = ParameterControlClient(HOST, PORT)
+controller = GeneralParameterController(control_client)
 
-    socket.send_json({'version':1, 'request_type':'set_parameters','payload':{'BraggPeakEventGenerator':{arg:arg_type(value)}}})
-    status = socket.recv()
-    print status
+if args.list_parameters:
+    controller.print_available_parameters()
 
-arg = sys.argv[1]
-value = sys.argv[2]
-set(arg, value)
+controller.set_parameter_value(args.controllee, args.parameter_name, args.parameter_value)
