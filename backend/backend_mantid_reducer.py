@@ -51,8 +51,6 @@ class BackendMantidRebinner(object):
         self._init_workspace(self.result_indices[-1])
 
     def next(self):
-        #mantid.RenameWorkspace(InputWorkspace='accumulated', OutputWorkspace='accumulated-{}'.format(self.result_indices[-1]))
-        #mantid.RenameWorkspace(InputWorkspace='accumulated_binned', OutputWorkspace='accumulated_binned-{}'.format(self.result_indices[-1]))
         self.resultLock.acquire()
         self.result_indices.append(self.result_indices[-1] + 1)
         self.bin_boundaries.append(None)
