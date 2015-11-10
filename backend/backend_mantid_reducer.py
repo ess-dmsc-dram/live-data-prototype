@@ -6,6 +6,7 @@ import numpy
 from mpi4py import MPI
 
 from backend_worker import BackendWorker
+from reductions import BasicPowderDiffraction
 
 import mantid.simpleapi as mantid
 from mantid.api import WorkspaceFactory
@@ -95,6 +96,7 @@ class BackendMantidReducer(BackendWorker):
         BackendWorker.__init__(self)
         self._data_queue_in = data_queue_in
         self._rebinner = rebinner
+        self._reducer = BasicPowderDiffraction()
         self._packet_index = 0
         self._bin_parameters = '0.4,0.1,5'
 
@@ -131,13 +133,10 @@ class BackendMantidReducer(BackendWorker):
         return ws
 
     def _reduce(self, ws):
-        mantid.ConvertUnits(InputWorkspace=ws, OutputWorkspace=ws, Target='dSpacing')
-        mantid.Rebin(InputWorkspace=ws, OutputWorkspace=ws, Params='0.4,0.1,5')
+        ws = self._reducer.reduce(ws, 'summed-{}'.format(self._packet_index))
         # TODO: ADS issues, see Mantid issue #14120. Can we keep this out of ADS?
-        name = 'summed-{}'.format(self._packet_index)
         self._packet_index += 1
-        mantid.SumSpectra(InputWorkspace=ws, OutputWorkspace=name)
-        return AnalysisDataService[name]
+        return ws
 
     def _merge(self, ws_new):
         histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
