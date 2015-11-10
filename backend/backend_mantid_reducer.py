@@ -32,8 +32,8 @@ class BackendMantidRebinner(object):
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned', Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_ws = AnalysisDataService['accumulated_binned']
+        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(self.result_indices[-1]), Params=self.current_bin_parameters, PreserveEvents=False)
+        self.histo_ws = AnalysisDataService['accumulated_binned-{}'.format(self.result_indices[-1])]
         bin_boundaries = deepcopy(self.histo_ws.readX(0))
         bin_values = deepcopy(self.histo_ws.readY(0))
 
