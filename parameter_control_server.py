@@ -119,7 +119,7 @@ class ParameterControlServer(object):
                         try:
                             tmp = getattr(controllee, key)
                             if not hasattr(tmp, '__call__'):
-                                reply[controllee_name][key] = getattr(controllee, key)
+                                reply[controllee_name][key] = tmp
                         except:
                             pass
                     else:
