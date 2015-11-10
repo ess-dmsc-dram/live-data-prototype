@@ -12,14 +12,13 @@ class GeneralParameterController(object):
         return self._control_client.send('set_parameters', command_payload)
 
     def print_available_parameters(self):
-        if self._parameter_type_cache is not None:
-            print 'Available parameters and types:'
-            print '-------------------------------'
+        print 'Available parameters and types:'
+        print '-------------------------------'
 
-            for controllee in self._parameter_type_cache.keys():
-                print 'Controllee:', controllee
-                for parameter, type in self._parameter_type_cache[controllee].iteritems():
-                    print '{}: {}'.format(parameter, repr(type))
+        for controllee in self._parameter_type_cache.keys():
+            print 'Controllee:', controllee
+            for parameter, type in self._parameter_type_cache[controllee].iteritems():
+                print '{}: {}'.format(parameter, repr(type))
 
 
 
