@@ -11,16 +11,36 @@ class GeneralParameterController(object):
 
         return self._control_client.send('set_parameters', command_payload)
 
+    def get_parameter_value(self, controllee, parameter):
+        command_payload = {controllee: {parameter: None}}
+
+        value_dict = self._get_values(command_payload)
+
+        return value_dict[controllee][parameter]
+
+    def print_current_values(self):
+        values = self._get_values(self._get_parameters())
+
+        print
+        print 'Available parameters and values:'
+        print '--------------------------------'
+        self._print_parameter_dict(values)
+        print
+
+
     def print_available_parameters(self):
+        print
         print 'Available parameters and types:'
-        print '-------------------------------'
+        print '--------------------------------'
 
-        for controllee in self._parameter_type_cache.keys():
+        self._print_parameter_dict(self._parameter_type_cache)
+        print
+
+    def _print_parameter_dict(self, parameter_dict):
+        for controllee in parameter_dict.keys():
             print 'Controllee:', controllee
-            for parameter, type in self._parameter_type_cache[controllee].iteritems():
+            for parameter, type in parameter_dict[controllee].iteritems():
                 print '{}: {}'.format(parameter, repr(type))
-
-
 
     def _convert_to_cached_type(self, controllee, parameter, value):
         return self._parameter_type_cache[controllee][parameter](value)

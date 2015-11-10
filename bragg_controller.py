@@ -12,8 +12,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-l', '--list-parameters', action='store_true',
                     help='Show a list of available parameters and their types.')
 parser.add_argument('-c', '--controllee', type=str, default='BraggPeakEventGenerator', help='Specify controllee.')
-parser.add_argument('parameter_name', help='Name of parameter to set.')
-parser.add_argument('parameter_value', help='New parameter value.')
+parser.add_argument('parameter_name', nargs='?', help='Name of parameter to set.')
+parser.add_argument('parameter_value', nargs='?', help='New parameter value.')
 
 args = parser.parse_args()
 
@@ -24,4 +24,11 @@ controller = GeneralParameterController(control_client)
 if args.list_parameters:
     controller.print_available_parameters()
 
-controller.set_parameter_value(args.controllee, args.parameter_name, args.parameter_value)
+if args.parameter_name:
+    if args.parameter_value:
+        print controller.set_parameter_value(args.controllee, args.parameter_name, args.parameter_value)
+    else:
+        print controller.get_parameter_value(args.controllee, args.parameter_name)
+
+else:
+    controller.print_current_values()
