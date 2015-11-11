@@ -9,10 +9,11 @@ class EventGenerator(Controllable):
     def __init__(self, generator):
         super(EventGenerator, self).__init__(type(self).__name__)
         self.event_data = deque()
+        self._meta_data = deque()
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
         self._events_per_pulse_mean = 10000
-        self._events_per_pulse_spread = 10000
+        self._events_per_pulse_spread = 100
         self._max_chunk_size = 5000
         self._pulses_per_second = 14
         self.generator = generator
@@ -38,6 +39,12 @@ class EventGenerator(Controllable):
         while True:
             if self.event_data:
                 return self.event_data.popleft()
+
+    def get_meta_data(self):
+        if self._meta_data:
+            return self._meta_data.popleft()
+        else:
+            return None
 
     def get_type_info(self):
         return {'names':['detector_id', 'tof'], 'formats':['int32','float32']}

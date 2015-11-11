@@ -11,45 +11,45 @@ class FakeEventStreamer(object):
 
     def connect(self):
         context = zmq.Context()
-        self.socket = context.socket(zmq.REP)
+        self.socket = context.socket(zmq.PUSH)
         uri = 'tcp://*:{0:d}'.format(ports.event_stream)
         self.socket.bind(uri)
         print 'Bound to ' + uri
 
-    def send_stream_info(self):
-        packet = {
-                'type':'stream_info',
-                'version':self.version,
-                'record_type':self.eventGenerator.get_type_info()
-                }
-        self.socket.send_json(packet)
+    def _send_meta_data(self, meta_data):
+        header = self._create_meta_data_header()
+        self.socket.send_json(header, flags=zmq.SNDMORE)
+        self.socket.send(meta_data)
 
-    def send_meta_data(self, meta_data):
-        packet = {
-                'type':'meta_data',
-                'meta_data':meta_data
-                }
-        self.socket.send_json(packet)
-
-    def send_event_data(self, pulse_id, event_data):
-        header = {
-                'type':'event_data',
-                'event_count':len(event_data),
-                'pulse_id':pulse_id
-                }
+    def _send_event_data(self, event_data):
+        header = self._create_event_data_header()
         self.socket.send_json(header, flags=zmq.SNDMORE)
         self.socket.send(event_data)
+
+    def _create_basic_header(self, packet_type):
+        header = {
+                'version':self.version,
+                'type':packet_type,
+                }
+        return header
+
+    def _create_event_data_header(self):
+        header = self._create_basic_header('event_data')
+        header['record_type'] = self.eventGenerator.get_type_info()
+        return header
+
+    def _create_meta_data_header(self):
+        header = self._create_basic_header('meta_data')
+        return header
 
     def run(self):
         print 'Starting FakeEventStreamer...'
         self.connect()
 
         while True:
-            command = self.socket.recv()
-            if command == 'h':
-                self.send_stream_info()
-            elif command == 'd':
-                event_data = self.eventGenerator.get_events()
-                self.send_event_data(pulse_id=0, event_data=event_data)
+            meta_data = self.eventGenerator.get_meta_data()
+            if meta_data:
+                self._send_meta_data(meta_data)
             else:
-                print 'Unknown command ' + command
+                event_data = self.eventGenerator.get_events()
+                self._send_event_data(event_data)
