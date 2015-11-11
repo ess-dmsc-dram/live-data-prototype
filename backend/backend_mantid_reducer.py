@@ -1,6 +1,7 @@
 import threading
 from copy import deepcopy
 import time
+import json
 
 import numpy
 from mpi4py import MPI
@@ -110,7 +111,12 @@ class BackendMantidReducer(BackendWorker):
     def _process_data(self):
         if not self._data_queue_in:
             return False
-        event_data = numpy.frombuffer(self._data_queue_in.get(), dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
+        header, data = self._data_queue_in.get()
+        if header == 'meta_data':
+            data = json.loads(data)
+            print('Received meta data {}, ignoring.'.format(data))
+            return True
+        event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
         event_ws = self._create_workspace_from_events(event_data)
         reduced = self._reduce(event_ws)

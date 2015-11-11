@@ -27,8 +27,9 @@ class ZMQQueueServer(object):
             # TODO proper sleep time
             while not self._deque:
                 time.sleep(0.1)
-            self._socket.send(self._deque.popleft())
-            #print('Server, remaining length: {}'.format(len(self._deque)))
+            header, payload = self._deque.popleft()
+            self._socket.send_json(header, flags=zmq.SNDMORE)
+            self._socket.send(payload)
 
     def put(self, item):
         self._deque.append(item)
@@ -54,12 +55,13 @@ class ZMQQueueClient(object):
     def run(self):
         print('Starting ZMQQueueClient')
         while True:
-            self._deque.append(self._socket.recv())
+            header = self._socket.recv_json()
+            payload = self._socket.recv()
+            self._deque.append((header, payload))
 
     def get(self):
         while not self._deque:
             time.sleep(0.1)
-        #print('Client, remaining length: {}'.format(len(self._deque)-1))
         return self._deque.popleft()
 
     def _connect(self, host, port):

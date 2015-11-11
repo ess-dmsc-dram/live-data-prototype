@@ -10,6 +10,11 @@ class EventGenerator(Controllable):
         super(EventGenerator, self).__init__(type(self).__name__)
         self.event_data = deque()
         self._meta_data = deque()
+        # TODO remove this temporary sample data
+        self._meta_data.append({'T':100})
+        self._meta_data.append({'T':60})
+        self._meta_data.append({'T':10})
+        self._meta_data.append({'T':4.2})
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
         self._events_per_pulse_mean = 10000

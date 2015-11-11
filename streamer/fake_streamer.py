@@ -19,7 +19,7 @@ class FakeEventStreamer(object):
     def _send_meta_data(self, meta_data):
         header = self._create_meta_data_header()
         self.socket.send_json(header, flags=zmq.SNDMORE)
-        self.socket.send(meta_data)
+        self.socket.send_json(meta_data)
 
     def _send_event_data(self, event_data):
         header = self._create_event_data_header()
