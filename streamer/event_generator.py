@@ -9,10 +9,12 @@ class EventGenerator(Controllable):
     def __init__(self, generator):
         super(EventGenerator, self).__init__(type(self).__name__)
         self.event_data = deque()
-        self._rate = 100000.0
         # do things on per-pulse basis?
         # each chunk must have a pulse ID!
-        self.chunk_size = 5000
+        self._events_per_pulse_mean = 10000
+        self._events_per_pulse_spread = 10000
+        self._max_chunk_size = 5000
+        self._pulses_per_second = 14
         self.generator = generator
         self._paused = False
 
@@ -27,7 +29,10 @@ class EventGenerator(Controllable):
             self.update_sleep_time()
 
     def generate_events(self):
-        self.event_data.append(self.generator.get_events(self.chunk_size))
+        remaining = max(1, int(numpy.random.normal(loc=self._events_per_pulse_mean, scale=self._events_per_pulse_spread)))
+        while remaining >= self._max_chunk_size:
+            self.event_data.append(self.generator.get_events(min(remaining, self._max_chunk_size)))
+            remaining -= self._max_chunk_size
 
     def get_events(self):
         while True:
@@ -47,34 +52,57 @@ class EventGenerator(Controllable):
     def update_sleep_time(self):
         self.end_new = time.time()
         elapsed = self.end_new - self.end_old
-        print 'sleep time: {} current rate: {}'.format(self.sleep_time, float(self.chunk_size)/elapsed)
+        print 'sleep time: {} current pulse rate: {}/second'.format(self.sleep_time, 1.0/elapsed)
         if self.sleep_time == 0.0:
-            self.sleep_time = max(0.0, float(self.chunk_size)/self.rate - elapsed)
+            self.sleep_time = max(0.0, 1.0/self._pulses_per_second - elapsed)
         else:
-            if float(self.chunk_size)/elapsed < self.rate:
+            if 1.0/elapsed < self._pulses_per_second:
                 self.sleep_time = self.sleep_time * 0.99
             else:
                 self.sleep_time = self.sleep_time * 1.01
         self.end_old = self.end_new
 
     def get_parameter_dict(self):
-        return {'rate':'float', 'chunk_size':'int', 'queue_status':'int', 'pause':'trigger'}
+        return {
+                'events_per_pulse_mean':'int',
+                'events_per_pulse_spread':'int',
+                'max_chunk_size':'int',
+                'pulses_per_second':'float',
+                'queue_status':'int',
+                'pause':'trigger'
+                }
 
     @property
-    def rate(self):
-        return self._rate
+    def events_per_pulse_mean(self):
+        return self._events_per_pulse_mean
 
-    @rate.setter
-    def rate(self, rate):
-        self._rate = rate
+    @events_per_pulse_mean.setter
+    def events_per_pulse_mean(self, events_per_pulse_mean):
+        self._events_per_pulse_mean = events_per_pulse_mean
 
     @property
-    def chunk_size(self):
-        return self._chunk_size
+    def events_per_pulse_spread(self):
+        return self._events_per_pulse_spread
 
-    @chunk_size.setter
-    def chunk_size(self, chunk_size):
-        self._chunk_size = chunk_size
+    @events_per_pulse_spread.setter
+    def events_per_pulse_spread(self, events_per_pulse_spread):
+        self._events_per_pulse_spread = events_per_pulse_spread
+
+    @property
+    def max_chunk_size(self):
+        return self._max_chunk_size
+
+    @max_chunk_size.setter
+    def max_chunk_size(self, max_chunk_size):
+        self._max_chunk_size = max_chunk_size
+
+    @property
+    def pulses_per_second(self):
+        return self._pulses_per_second
+
+    @pulses_per_second.setter
+    def pulses_per_second(self, pulses_per_second):
+        self._pulses_per_second = pulses_per_second
 
     @property
     def queue_status(self):
