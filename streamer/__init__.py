@@ -1,3 +1,4 @@
 from distribution_file_based_event_generator import create_DistributionFileBasedEventGenerator
 from bragg_peak_event_generator import create_BraggEventGenerator
+from bragg_peak_event_generator import create_BraggGeneratorTemperatureDecorator
 from startup import start_streamer_daemon_threads

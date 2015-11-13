@@ -161,3 +161,61 @@ class BraggPeakEventGenerator(Controllable):
 def create_BraggEventGenerator(idf, crystal_structure_parameters, dmin, dmax):
     tof_factor_calculator = TOFFactorCalculator(idf)
     return BraggPeakEventGenerator(crystal_structure_parameters, dmin, dmax, tof_factor_calculator)
+
+
+class BraggGeneratorTemperatureDecorator(Controllable):
+    def __init__(self, bragg_event_generator):
+        super(BraggGeneratorTemperatureDecorator, self).__init__(type(self).__name__)
+
+        self._temperature = 293.0
+        self._bragg_generator = bragg_event_generator
+
+        self._isotropic_atom_base_strings, self._room_temperature_adps = self._get_atom_parameters(
+            self._bragg_generator.atoms)
+
+    def _get_atom_parameters(self, atoms_string):
+        atoms = atoms_string.split(';')
+
+        base_strings = []
+        adps = []
+
+        for atom_string in atoms:
+            components = atom_string.strip().split(' ')
+
+            if len(components) == 6:
+                base_strings.append(' '.join(components[:-1]))
+                adps.append(float(components[-1]))
+
+        return base_strings, adps
+
+    def _update_bragg_generator(self):
+        self._bragg_generator.atoms = self._get_new_atoms_string()
+
+    def _get_new_atoms_string(self):
+        temperature_scale = self._get_temperature_scale()
+        scaled_adps = [x * temperature_scale for x in self._room_temperature_adps]
+
+        return ';'.join([' '.join((x, str(y))) for x, y in zip(self._isotropic_atom_base_strings, scaled_adps)])
+
+    def _get_temperature_scale(self):
+        return np.sqrt(self._temperature / 293.0)
+
+    def get_events(self, size):
+        return self._bragg_generator.get_events(size)
+
+    def get_parameter_dict(self):
+        return {'temperature': 'float'}
+
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, new_temperature):
+        self._temperature = max(0.0, new_temperature)
+
+        self._update_bragg_generator()
+
+
+def create_BraggGeneratorTemperatureDecorator(bragg_event_generator):
+    return BraggGeneratorTemperatureDecorator(bragg_event_generator)
