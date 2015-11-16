@@ -111,17 +111,24 @@ class BackendMantidReducer(BackendWorker):
     def _process_data(self):
         if not self._data_queue_in:
             return False
-        header, data = self._data_queue_in.get()
-        if header == 'meta_data':
-            data = json.loads(data)
-            print('Received meta data {}, ignoring.'.format(data))
-            return True
-        event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
 
+        header, data = self._data_queue_in.get()
+
+        if header == 'meta_data':
+            return self._process_meta_data(data)
+        else:
+            return self._process_event_data(data)
+
+    def _process_meta_data(self, data):
+        data = json.loads(data)
+        print('Received meta data {}, ignoring.'.format(data))
+        return True
+
+    def _process_event_data(self, data):
+        event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
         event_ws = self._create_workspace_from_events(event_data)
         reduced = self._reduce(event_ws)
         self._merge(reduced)
-
         return True
 
     def _create_workspace_from_events(self, event_data):
