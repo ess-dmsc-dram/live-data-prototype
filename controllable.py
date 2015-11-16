@@ -63,3 +63,64 @@ class ControllableDecorator(Controllable):
         total_parameter_dict.update(self._get_decorator_parameter_dict())
         return total_parameter_dict
 
+
+if __name__ == '__main__':
+    class Yeah(Controllable):
+        def __init__(self):
+            super(Yeah, self).__init__(type(self).__name__)
+
+            self._lol = 'LOL'
+            self._rofl = 'ROFL'
+
+        def get_parameter_dict(self):
+            return {'lol': 'str', 'rofl': 'str', 'trigger': 'None'}
+
+        def trigger(self):
+            print 'Yeah yeah.'
+
+        @property
+        def lol(self):
+            return self._lol
+
+        @lol.setter
+        def lol(self, new_lol):
+            self._lol = new_lol
+
+        @property
+        def rofl(self):
+            return self._rofl
+
+
+    class Phrase(ControllableDecorator):
+        def __init__(self, decorated_controllable):
+            super(Phrase, self).__init__(decorated_controllable, 'Phrased')
+
+            self._phrase = 'right'
+
+        def _get_decorator_parameter_dict(self):
+            return {'phrase': 'str'}
+
+        @property
+        def phrase(self):
+            return self._phrase
+
+        @phrase.setter
+        def phrase(self, new_phrase):
+            self._phrase = new_phrase
+
+        def printCoolStuff(self):
+            if hasattr(self._decorated_controllable, 'lol') and hasattr(self._decorated_controllable, 'rofl'):
+                print self._decorated_controllable.lol + ' ' + self._decorated_controllable.rofl + ', ' + self.phrase + '?'
+
+
+    yeah = Yeah()
+    dec = Phrase(yeah)
+
+    print dec.name
+    print dec.get_parameter_dict()
+    dec.printCoolStuff()
+    print dec.lol
+    dec.lol = 'Test'
+    print dec.lol
+    dec.trigger()
+    dec.printCoolStuff()
