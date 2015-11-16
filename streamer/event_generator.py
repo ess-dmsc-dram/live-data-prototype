@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import datetime
 import time
 import numpy
 
@@ -23,6 +24,7 @@ class EventGenerator(Controllable):
         self._pulses_per_second = 14
         self.generator = generator
         self._paused = False
+        self._pulse_id = 0
 
     def run(self):
         print 'Starting EventGenerator...'
@@ -46,10 +48,12 @@ class EventGenerator(Controllable):
                 return self.event_data.popleft()
 
     def get_meta_data(self):
+        payload = None
         if self._meta_data:
-            return self._meta_data.popleft()
-        else:
-            return None
+            payload = self._meta_data.popleft()
+        meta_data = {'pulse_id':self._pulse_id, 'pulse_time':datetime.now().isoformat(), 'payload':payload }
+        self._pulse_id += 1
+        return meta_data
 
     def get_type_info(self):
         return {'names':['detector_id', 'tof'], 'formats':['int32','float32']}

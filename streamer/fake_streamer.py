@@ -47,9 +47,6 @@ class FakeEventStreamer(object):
         self.connect()
 
         while True:
-            meta_data = self.eventGenerator.get_meta_data()
-            if meta_data:
-                self._send_meta_data(meta_data)
-            else:
-                event_data = self.eventGenerator.get_events()
-                self._send_event_data(event_data)
+            # we first send all meta data for a pulse, then all event data
+            self._send_meta_data(self.eventGenerator.get_meta_data())
+            self._send_event_data(self.eventGenerator.get_events())
