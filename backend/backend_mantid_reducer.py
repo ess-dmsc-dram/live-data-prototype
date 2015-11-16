@@ -99,6 +99,7 @@ class BackendMantidReducer(BackendWorker):
         self._reducer = BasicPowderDiffraction()
         self._packet_index = 0
         self._bin_parameters = '0.4,0.1,5'
+        self._filter_pulses = False
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -123,10 +124,15 @@ class BackendMantidReducer(BackendWorker):
     def _process_meta_data(self, data):
         data = json.loads(data)
         self._pulse_time = str(data['pulse_time'])
+        payload = data['payload']
+        lattice_spacing = float(payload['unit_cell'].split()[0])
+        self._drop_pulse = abs(lattice_spacing - 5.431) > 0.01
         print('Received meta data {}, ignoring.'.format(data['payload']))
         return True
 
     def _process_event_data(self, data):
+        if self._filter_pulses and self._drop_pulse:
+            return True
         event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
         event_ws = self._create_workspace_from_events(event_data)
         reduced = self._reduce(event_ws)
@@ -163,7 +169,7 @@ class BackendMantidReducer(BackendWorker):
         self._rebinner.update_result(bin_boundaries, bin_values)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger'}
+        return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger', 'filter_pulses':'bool'}
 
     @property
     def bin_parameters(self):
@@ -174,6 +180,15 @@ class BackendMantidReducer(BackendWorker):
         self._bin_parameters = parameters
         self._rebinner.set_bin_parameters(parameters)
         self._rebinner.rebin()
+
+    @property
+    def filter_pulses(self):
+        return self._filter_pulses
+
+    @filter_pulses.setter
+    def filter_pulses(self, filter_pulses):
+        self._filter_pulses = filter_pulses
+        self._rebinner.next()
 
     @property
     def reset(self):
