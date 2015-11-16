@@ -13,6 +13,7 @@ import mantid.simpleapi as mantid
 from mantid.api import WorkspaceFactory
 from mantid.api import AnalysisDataService
 from mantid.api import StorageMode
+from mantid.kernel import DateAndTime
 
 mantid.config['MultiThreaded.MaxCores'] = '1'
 #if MPI.COMM_WORLD.Get_rank() != 0:
@@ -121,7 +122,8 @@ class BackendMantidReducer(BackendWorker):
 
     def _process_meta_data(self, data):
         data = json.loads(data)
-        print('Received meta data {}, ignoring.'.format(data))
+        self._pulse_time = str(data['pulse_time'])
+        print('Received meta data {}, ignoring.'.format(data['payload']))
         return True
 
     def _process_event_data(self, data):
@@ -140,7 +142,7 @@ class BackendMantidReducer(BackendWorker):
         ws.getAxis(0).setUnit('tof')
         ws.setStorageMode(StorageMode.Distributed)
         for i in event_data:
-            ws.getEventList(int(i[0])).addEventQuickly(float(i[1]))
+            ws.getEventList(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(self._pulse_time))
         return ws
 
     def _reduce(self, ws):
