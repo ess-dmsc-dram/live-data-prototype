@@ -15,6 +15,7 @@ class Controllable(object):
     def name(self):
         return self._name
 
+
 # Meta class for ControllableDectorator. Each time a ControllableDecorator-subclass is instantiated, a new class
 # type is created, which is then actually instantiated. Using this method, the decorated attributes can be forwarded
 # properly (properties can not be added to an object, only to a type, but since the properties of one decorated object
@@ -23,8 +24,19 @@ class ControllableDecoratorMetaClass(type):
     _type = 0
 
     def __new__(cls, clsname, bases, attr):
-        cls._type += 1
-        return type.__new__(cls, clsname + str(cls._type), bases, attr)
+        final_class_name = clsname
+        if final_class_name != 'ControllableDecorator':
+            final_class_name += str(cls._type)
+            cls._type += 1
+
+        print clsname, final_class_name
+
+        return type.__new__(cls, final_class_name, bases, attr)
+
+    def __init__(cls, clsname, bases, attr):
+        print cls, clsname
+        type.__init__(cls, clsname, bases, attr)
+
 
 # Property-like class that invokes getattr/setattr in target using name
 class ForwardingProperty(object):
@@ -38,10 +50,9 @@ class ForwardingProperty(object):
     def __set__(self, instance, value):
         setattr(self._target, self._name, value)
 
-class ControllableDecorator(Controllable):
-    __metaclass__ = ControllableDecoratorMetaClass
 
-    def __init__(self, decorated_controllable, prefix=''):
+class ControllableDecorator(Controllable):
+    def __init__(self, decorated_controllable, prefix='Decorated'):
         super(ControllableDecorator, self).__init__(prefix + decorated_controllable.name)
 
         self._decorated_controllable = decorated_controllable
@@ -56,12 +67,21 @@ class ControllableDecorator(Controllable):
             if hasattr(attribute, '__call__'):
                 setattr(type(self), attribute_name, attribute)
             else:
-                setattr(type(self), attribute_name, ForwardingProperty(self._decorated_controllable, attribute_name))
+                setattr(type(self),
+                        attribute_name,
+                        ForwardingProperty(self._decorated_controllable, attribute_name))
 
     def get_parameter_dict(self):
         total_parameter_dict = self._base_properties.copy()
         total_parameter_dict.update(self._get_decorator_parameter_dict())
         return total_parameter_dict
+
+
+def make_decorator(cls, decorated_controllable):
+    newType = ControllableDecoratorMetaClass(cls.__name__, (cls,), {})
+
+    return newType(decorated_controllable)
+
 
 
 if __name__ == '__main__':
@@ -91,6 +111,17 @@ if __name__ == '__main__':
             return self._rofl
 
 
+    class Nope(Controllable):
+        def __init__(self):
+            super(Nope, self).__init__(type(self).__name__)
+
+        def get_parameter_dict(self):
+            return {'nope': 'None'}
+
+        def nope(self):
+            print 'Nope, nope, nope!'
+
+
     class Phrase(ControllableDecorator):
         def __init__(self, decorated_controllable):
             super(Phrase, self).__init__(decorated_controllable, 'Phrased')
@@ -114,7 +145,8 @@ if __name__ == '__main__':
 
 
     yeah = Yeah()
-    dec = Phrase(yeah)
+    nope = Nope()
+    dec = make_decorator(Phrase, yeah)
 
     print dec.name
     print dec.get_parameter_dict()
@@ -123,4 +155,13 @@ if __name__ == '__main__':
     dec.lol = 'Test'
     print dec.lol
     dec.trigger()
+    yeah.trigger()
+    print yeah.lol
     dec.printCoolStuff()
+    dec.phrase = 'eh'
+    dec.printCoolStuff()
+
+    dec2 = make_decorator(Phrase, nope)
+    dec2.nope()
+    print dec.__class__.__mro__
+    print dec2.__class__.__mro__
