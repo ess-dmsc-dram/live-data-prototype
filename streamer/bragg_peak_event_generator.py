@@ -1,12 +1,12 @@
 from threading import Lock
 
 from mantid.simpleapi import CreateSimulationWorkspace
-from mantid.geometry import CrystalStructure, ReflectionGenerator
+from mantid.geometry import CrystalStructure, ReflectionGenerator, UnitCell
 import numpy as np
 from functools import partial
 from scipy.constants import m_n, h
 
-from controllable import Controllable
+from controllable import Controllable, ControllableDecorator, make_decorator
 
 
 class TOFFactorCalculator(object):
@@ -163,15 +163,19 @@ def create_BraggEventGenerator(idf, crystal_structure_parameters, dmin, dmax):
     return BraggPeakEventGenerator(crystal_structure_parameters, dmin, dmax, tof_factor_calculator)
 
 
-class BraggGeneratorTemperatureDecorator(Controllable):
-    def __init__(self, bragg_event_generator):
-        super(BraggGeneratorTemperatureDecorator, self).__init__(type(self).__name__)
+class BraggGeneratorTemperatureDecorator(ControllableDecorator):
+    def __init__(self, bragg_event_generator, thermal_expansion_coefficient=0.0001):
+        super(BraggGeneratorTemperatureDecorator, self).__init__(bragg_event_generator, 'Temperature')
 
         self._temperature = 293.0
+        self._thermal_expansion_coefficient = thermal_expansion_coefficient
         self._bragg_generator = bragg_event_generator
 
         self._isotropic_atom_base_strings, self._room_temperature_adps = self._get_atom_parameters(
             self._bragg_generator.atoms)
+
+        self._room_temperature_cell_lengths, self._cell_angles = self._get_room_temperature_unit_cell(
+            self._bragg_generator.unit_cell)
 
     def _get_atom_parameters(self, atoms_string):
         atoms = atoms_string.split(';')
@@ -188,14 +192,30 @@ class BraggGeneratorTemperatureDecorator(Controllable):
 
         return base_strings, adps
 
+    def _get_room_temperature_unit_cell(self, unit_cell_string):
+        cell_parameters = [float(x) for x in unit_cell_string.split(' ')]
+        cell_lengths = np.array(cell_parameters[:3])
+
+        if len(cell_parameters) == 3:
+            return cell_lengths, np.array([90., 90., 90.])
+        else:
+            return cell_lengths, np.array(cell_parameters[3:])
+
     def _update_bragg_generator(self):
         self._bragg_generator.atoms = self._get_new_atoms_string()
+        self._bragg_generator.unit_cell = self._get_new_unit_cell_string()
 
     def _get_new_atoms_string(self):
         temperature_scale = self._get_temperature_scale()
         scaled_adps = [x * temperature_scale for x in self._room_temperature_adps]
 
         return ';'.join([' '.join((x, str(y))) for x, y in zip(self._isotropic_atom_base_strings, scaled_adps)])
+
+    def _get_new_unit_cell_string(self):
+        scaled_cell_parameters = self._room_temperature_cell_lengths + (self._temperature - 293.0) * \
+                                                                       self._thermal_expansion_coefficient
+
+        return ' '.join(np.concatenate(scaled_cell_parameters, self._cell_angles))
 
     def _get_temperature_scale(self):
         return np.sqrt(self._temperature / 293.0)
@@ -217,5 +237,5 @@ class BraggGeneratorTemperatureDecorator(Controllable):
         self._update_bragg_generator()
 
 
-def create_BraggGeneratorTemperatureDecorator(bragg_event_generator):
-    return BraggGeneratorTemperatureDecorator(bragg_event_generator)
+def create_BraggGeneratorTemperatureDecorator(bragg_event_generator, thermal_expansion_coefficient=0.0001):
+    return make_decorator(BraggGeneratorTemperatureDecorator, bragg_event_generator, thermal_expansion_coefficient)

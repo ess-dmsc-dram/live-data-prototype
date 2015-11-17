@@ -29,8 +29,6 @@ class ControllableDecoratorMetaClass(type):
             final_class_name += str(cls._type)
             cls._type += 1
 
-        print clsname, final_class_name
-
         return type.__new__(cls, final_class_name, bases, attr)
 
     def __init__(cls, clsname, bases, attr):
@@ -77,10 +75,10 @@ class ControllableDecorator(Controllable):
         return total_parameter_dict
 
 
-def make_decorator(cls, decorated_controllable):
+def make_decorator(cls, decorated_controllable, *args):
     newType = ControllableDecoratorMetaClass(cls.__name__, (cls,), {})
 
-    return newType(decorated_controllable)
+    return newType(decorated_controllable, *args)
 
 
 
@@ -163,5 +161,9 @@ if __name__ == '__main__':
 
     dec2 = make_decorator(Phrase, nope)
     dec2.nope()
+
+    print dec2.phrase
+    print dec.phrase
+
     print dec.__class__.__mro__
     print dec2.__class__.__mro__
