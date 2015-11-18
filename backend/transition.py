@@ -25,7 +25,8 @@ class Transition(object):
         input_checkpoint = self._input_checkpoint()
         # TODO for now we are covering only single-input transitions
         self._checkpoint = self._make_composite_if_necessary(input_checkpoint, self._checkpoint)
-        self._recurse_trigger(input_checkpoint, self._checkpoint)
+        can_update = self._can_do_updates()
+        self._recurse_trigger(can_update, input_checkpoint, self._checkpoint)
 
     def _make_composite_if_necessary(self, checkpoint_in, checkpoint_out):
         if isinstance(checkpoint_in, CompositeCheckpoint):
@@ -35,18 +36,17 @@ class Transition(object):
                 return CompositeCheckpoint(len(checkpoint_in))
         return checkpoint_out
 
-    def _recurse_trigger(self, checkpoint_in, checkpoint_out):
+    def _recurse_trigger(self, can_update, checkpoint_in, checkpoint_out):
         if isinstance(checkpoint_in, CompositeCheckpoint):
             for i in range(len(checkpoint_in)):
-                print i
                 checkpoint_out[i] = self._make_composite_if_necessary(checkpoint_in[i], checkpoint_out[i])
-                self._recurse_trigger(checkpoint_in[i], checkpoint_out[i])
+                self._recurse_trigger(can_update, checkpoint_in[i], checkpoint_out[i])
         else:
-            self._do_trigger(checkpoint_in, checkpoint_out)
+            self._do_trigger(can_update, checkpoint_in, checkpoint_out)
 
-    def _do_trigger(self, checkpoint_in, checkpoint_out):
+    def _do_trigger(self, can_update, checkpoint_in, checkpoint_out):
         data, diff = checkpoint_in.get_data()
-        if self._can_do_updates() and (diff is not None):
+        if can_update and (diff is not None):
             result = self._do_transition(diff)
             checkpoint_out.append(result)
         else:
