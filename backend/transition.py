@@ -1,3 +1,5 @@
+import weakref
+
 from checkpoint import Checkpoint
 from checkpoint import DataCheckpoint
 from checkpoint import CompositeCheckpoint
@@ -6,7 +8,8 @@ from checkpoint import CompositeCheckpoint
 class Transition(object):
     def __init__(self, input_checkpoint = None):
         # TODO merge inputs into CompositeCheckpoint? No! They may have nothing to do with each other
-        self._input_checkpoint = input_checkpoint
+        # We keep a *weakref* to upstream checkpoints to break cyclic references.
+        self._input_checkpoint = weakref.ref(input_checkpoint)
         # TODO move such an init to child classes? i.e., child defines what outputs it has!
         # no.. just replace this later by appropriate CompositeCheckpoint
         # TODO would it make sense to init this as Checkpoint() instead?
@@ -18,9 +21,11 @@ class Transition(object):
     # TODO cover case of adding transition after first data arrives
 
     def trigger(self):
+        # Temporarily get the normal ref to avoid messe code in various functions.
+        input_checkpoint = self._input_checkpoint()
         # TODO for now we are covering only single-input transitions
-        self._checkpoint = self._make_composite_if_necessary(self._input_checkpoint, self._checkpoint)
-        self._recurse_trigger(self._input_checkpoint, self._checkpoint)
+        self._checkpoint = self._make_composite_if_necessary(input_checkpoint, self._checkpoint)
+        self._recurse_trigger(input_checkpoint, self._checkpoint)
 
     def _make_composite_if_necessary(self, checkpoint_in, checkpoint_out):
         if isinstance(checkpoint_in, CompositeCheckpoint):
