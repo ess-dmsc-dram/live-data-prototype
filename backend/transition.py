@@ -20,12 +20,19 @@ class Transition(object):
 
     # TODO cover case of adding transition after first data arrives
 
-    def trigger(self):
+    def trigger_update(self):
+        can_update = self._can_do_updates()
+        self._trigger(can_update)
+
+    def trigger_rerun(self):
+        can_update = False
+        self._trigger(can_update)
+
+    def _trigger(self, can_update):
         # Temporarily get the normal ref to avoid messe code in various functions.
         input_checkpoint = self._input_checkpoint()
         # TODO for now we are covering only single-input transitions
         self._checkpoint = self._make_composite_if_necessary(input_checkpoint, self._checkpoint)
-        can_update = self._can_do_updates()
         self._recurse_trigger(can_update, input_checkpoint, self._checkpoint)
 
     def _make_composite_if_necessary(self, checkpoint_in, checkpoint_out):

@@ -26,7 +26,7 @@ class DataCheckpoint(Checkpoint):
 
     def add_transition(self, transition):
         self._transitions.append(transition)
-        transition.trigger()
+        transition.trigger_rerun()
 
     def replace(self, data):
         self._replace(data)
@@ -53,7 +53,7 @@ class DataCheckpoint(Checkpoint):
 
     def _trigger_transitions(self):
         for t in self._transitions:
-            t.trigger()
+            t.trigger_update()
 
 
 class CompositeCheckpoint(Checkpoint):
