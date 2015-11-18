@@ -18,16 +18,10 @@ class DataCheckpoint(Checkpoint):
         return self._data, self._data_diff
 
     def replace(self, data):
-        self._replace(data)
-
-    def append(self, data):
-        self._append(data)
-
-    def _replace(self, data):
         self._data_diff = None
         self._data = data
 
-    def _append(self, data):
+    def append(self, data):
         self._data_diff = data
         if self._data is None:
             self._data = data
