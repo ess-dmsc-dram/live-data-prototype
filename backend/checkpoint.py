@@ -2,9 +2,6 @@ class Checkpoint(object):
     def get_data(self):
         raise RuntimeError('Checkpoint.get_data() must be implemented in child classes!')
 
-    def add_transition(self, transition):
-        raise RuntimeError('Checkpoint.add_transition() must be implemented in child classes!')
-
     def replace(self, data):
         raise RuntimeError('Checkpoint.replace() must be implemented in child classes!')
 
@@ -16,7 +13,6 @@ class DataCheckpoint(Checkpoint):
     def __init__(self):
         self._data = None
         self._data_diff = None
-        self._transitions = []
 
     def get_data(self):
         diff = self._data_diff
@@ -24,36 +20,24 @@ class DataCheckpoint(Checkpoint):
         self._data_diff = None
         return self._data, diff
 
-    def add_transition(self, transition):
-        self._transitions.append(transition)
-        transition.trigger_rerun()
-
     def replace(self, data):
         self._replace(data)
-        self._trigger_transitions()
 
     def append(self, data):
         self._append(data)
-        self._trigger_transitions()
 
     def _replace(self, data):
         self._data_diff = None
         self._data = data
 
     def _append(self, data):
-        # keep the diff to allow transitions to work only based on that
-        if self._transitions:
-            self._data_diff = data
+        self._data_diff = data
         if self._data is None:
             self._data = data
         else:
             self._data += data
             # ADS, your friendly helper...
             #DeleteWorkspace(data)
-
-    def _trigger_transitions(self):
-        for t in self._transitions:
-            t.trigger_update()
 
 
 class CompositeCheckpoint(Checkpoint):
@@ -90,10 +74,6 @@ class CompositeCheckpoint(Checkpoint):
     def get_data(self):
         return [ leaf.get_data() for leaf in self._leafs ]
 
-    def add_transition(self, transition):
-        for leaf in self._leafs:
-            leaf.add_transition(transition)
-
     def replace(self, data):
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leafs, data):
@@ -103,5 +83,3 @@ class CompositeCheckpoint(Checkpoint):
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leafs, data):
             leaf.append(leaf_data)
-
-

@@ -14,19 +14,24 @@ class Transition(object):
         # no.. just replace this later by appropriate CompositeCheckpoint
         # TODO would it make sense to init this as Checkpoint() instead?
         self._checkpoint = DataCheckpoint()
+        self._transitions = []
+
+    def add_transition(self, transition):
+        self._transitions.append(transition)
+        transition.trigger_rerun()
 
     def get_checkpoint(self):
         return self._checkpoint
 
-    # TODO cover case of adding transition after first data arrives
-
     def trigger_update(self):
         can_update = self._can_do_updates()
         self._trigger(can_update)
+        self._trigger_child_update()
 
     def trigger_rerun(self):
         can_update = False
         self._trigger(can_update)
+        self._trigger_child_rerun()
 
     def _trigger(self, can_update):
         # Temporarily get the normal ref to avoid messe code in various functions.
@@ -59,6 +64,14 @@ class Transition(object):
         else:
             result = self._do_transition(data)
             checkpoint_out.replace(result)
+
+    def _trigger_child_update(self):
+        for t in self._transitions:
+            t.trigger_update()
+
+    def _trigger_child_rerun(self):
+        for t in self._transitions:
+            t.trigger_rerun()
 
     #def trigger(self):
     #    is_update, inputs = self._collect_inputs()
