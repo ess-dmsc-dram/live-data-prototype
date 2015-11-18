@@ -6,19 +6,19 @@ from checkpoint import CompositeCheckpoint
 
 
 class Transition(object):
-    def __init__(self, input_checkpoint = None):
+    def __init__(self, parents = []):
         # TODO merge inputs into CompositeCheckpoint? No! They may have nothing to do with each other
-        # We keep a *weakref* to upstream checkpoints to break cyclic references.
-        self._input_checkpoint = weakref.ref(input_checkpoint)
         # TODO move such an init to child classes? i.e., child defines what outputs it has!
         # no.. just replace this later by appropriate CompositeCheckpoint
         # TODO would it make sense to init this as Checkpoint() instead?
+        self._parents = []
         self._checkpoint = DataCheckpoint()
         self._transitions = []
-
-    def add_transition(self, transition):
-        self._transitions.append(transition)
-        transition.trigger_rerun()
+        for p in parents:
+            # We keep a *weakref* to upstream checkpoints to break cyclic references.
+            self._parents.append(weakref.ref(p))
+            p._add_transition(self)
+        self.trigger_rerun()
 
     def get_checkpoint(self):
         return self._checkpoint
@@ -34,8 +34,7 @@ class Transition(object):
         self._trigger_child_rerun()
 
     def _trigger(self, can_update):
-        # Temporarily get the normal ref to avoid messe code in various functions.
-        input_checkpoint = self._input_checkpoint()
+        input_checkpoint = self._get_input()
         # TODO for now we are covering only single-input transitions
         self._checkpoint = self._make_composite_if_necessary(input_checkpoint, self._checkpoint)
         self._recurse_trigger(can_update, input_checkpoint, self._checkpoint)
@@ -64,6 +63,13 @@ class Transition(object):
         else:
             result = self._do_transition(data)
             checkpoint_out.replace(result)
+
+    def _get_input(self):
+        # Temporarily get the normal ref to avoid messy code in various functions.
+        return self._parents[0]().get_checkpoint()
+
+    def _add_transition(self, transition):
+        self._transitions.append(transition)
 
     def _trigger_child_update(self):
         for t in self._transitions:
@@ -117,17 +123,29 @@ class Transition(object):
         return True
 
 
+class FromCheckpointTransition(Transition):
+    def __init__(self, input_checkpoint):
+        self._input = input_checkpoint
+        super(FromCheckpointTransition, self).__init__([])
+
+    def _get_input(self):
+        return self._input
+
+    def _do_transition(self, data):
+        return data
+
+
 class IdentityTransition(Transition):
-    def __init__(self, input_checkpoint = None):
-        super(IdentityTransition, self).__init__(input_checkpoint)
+    def __init__(self, parent):
+        super(IdentityTransition, self).__init__([parent])
 
     def _do_transition(self, data):
         return data
 
 
 class UpperCaseTransition(Transition):
-    def __init__(self, input_checkpoint = None):
-        super(UpperCaseTransition, self).__init__(input_checkpoint)
+    def __init__(self, parent):
+        super(UpperCaseTransition, self).__init__([parent])
 
     def _do_transition(self, data):
         return data.upper()
