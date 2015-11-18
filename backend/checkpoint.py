@@ -15,10 +15,7 @@ class DataCheckpoint(Checkpoint):
         self._data_diff = None
 
     def get_data(self):
-        diff = self._data_diff
-        # this class gives up ownership of the diff
-        self._data_diff = None
-        return self._data, diff
+        return self._data, self._data_diff
 
     def replace(self, data):
         self._replace(data)
