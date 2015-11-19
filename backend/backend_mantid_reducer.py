@@ -32,7 +32,6 @@ mantid.ConfigService.setConsoleLogLevel(0)
 class BackendMantidRebinner(object):
     def __init__(self):
         self._comm = MPI.COMM_WORLD
-        self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
         self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
         self.rebin_transition = MantidRebinTransition(self.dummy_transition)
@@ -45,7 +44,6 @@ class BackendMantidRebinner(object):
         return self.rebin_transition.get_checkpoint()[-1].data.readY(0)
 
     def rebin(self):
-        self.current_bin_parameters = self._target_bin_parameters
         self.rebin_transition.bin_parameters = self._target_bin_parameters
         self.rebin_transition.trigger_rerun()
 
@@ -112,7 +110,7 @@ class BackendMantidReducer(BackendWorker):
         event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
         event_ws = self._create_workspace_from_events(event_data)
         reduced = self._reduce(event_ws)
-        self._merge(reduced)
+        self._rebinner.dummy_transition.append(reduced)
         return True
 
     def _create_workspace_from_events(self, event_data):
@@ -132,9 +130,6 @@ class BackendMantidReducer(BackendWorker):
         # TODO: ADS issues, see Mantid issue #14120. Can we keep this out of ADS?
         self._packet_index += 1
         return ws
-
-    def _merge(self, ws_new):
-        self._rebinner.dummy_transition.append(ws_new)
 
     def get_parameter_dict(self):
         return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger', 'filter_pulses':'bool'}
