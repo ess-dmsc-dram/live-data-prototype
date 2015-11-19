@@ -35,7 +35,6 @@ class BackendMantidRebinner(object):
         self._target_bin_parameters = None
         self.checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
         self.histo_checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
-        self._init_workspace()
 
     def get_bin_boundaries(self):
         return self.histo_checkpoint[-1].data.readX(0)
@@ -59,7 +58,6 @@ class BackendMantidRebinner(object):
         self.bin_boundaries = [None]
         self.bin_values = [None]
         self.resultLock.release()
-        self._init_workspace()
 
     def next(self):
         self.resultLock.acquire()
@@ -68,7 +66,6 @@ class BackendMantidRebinner(object):
         self.resultLock.release()
         self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self._init_workspace()
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
@@ -83,21 +80,6 @@ class BackendMantidRebinner(object):
         if self._comm.Get_rank() == 0:
             self.bin_values[-1] = sum(gathered)
         self.resultLock.release()
-
-    def _init_workspace(self):
-        tmp = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
-        AnalysisDataService.Instance().addOrReplace('tmp', tmp)
-        tmp =  AnalysisDataService['tmp']
-        mantid.LoadInstrument(Workspace=tmp, Filename='/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml')
-        tmp.padSpectra()
-        tmp.getAxis(0).setUnit('tof')
-        tmp.setStorageMode(StorageMode.Distributed)
-        mantid.ConvertUnits(InputWorkspace=tmp, OutputWorkspace=tmp, Target='dSpacing')
-        mantid.Rebin(InputWorkspace=tmp, OutputWorkspace=tmp, Params=self.current_bin_parameters)
-        tmp = mantid.SumSpectra(InputWorkspace=tmp)
-        self.checkpoint[-1].replace(tmp)
-        tmp = mantid.Rebin(InputWorkspace=self.checkpoint[-1].data, Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_checkpoint[-1].replace(tmp)
 
 
 class BackendMantidReducer(BackendWorker):
