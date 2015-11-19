@@ -30,11 +30,12 @@ class DataCheckpoint(Checkpoint):
         self._set_data(data)
 
     def append(self, data):
-        self._set_data_diff(data)
         if self._data is None:
-            self._set_data(data)
+            self.replace(data)
         else:
             self._append_data(data)
+            # Careful: _set_data_diff may invalidate data, so we call this last.
+            self._set_data_diff(data)
 
     def _set_data_diff(self, data):
         self._data_diff = data
