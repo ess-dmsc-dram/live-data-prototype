@@ -42,9 +42,9 @@ class Transition(object):
     def _make_composite_if_necessary(self, checkpoint_in, checkpoint_out):
         if isinstance(checkpoint_in, CompositeCheckpoint):
             if not isinstance(checkpoint_out, CompositeCheckpoint):
-                return CompositeCheckpoint(len(checkpoint_in))
+                return CompositeCheckpoint(type(checkpoint_in[0]), len(checkpoint_in))
             elif len(checkpoint_in) != len(checkpoint_out):
-                return CompositeCheckpoint(len(checkpoint_in))
+                return CompositeCheckpoint(type(checkpoint_in[0]), len(checkpoint_in))
         return checkpoint_out
 
     def _recurse_trigger(self, can_update, checkpoint_in, checkpoint_out):
@@ -57,6 +57,7 @@ class Transition(object):
 
     def _do_trigger(self, can_update, checkpoint_in, checkpoint_out):
         data, diff = checkpoint_in.get_data()
+        # TODO This will trigger reruns of leaves that did not get updated! Fix this!
         if can_update and (diff is not None):
             result = self._do_transition(diff)
             checkpoint_out.append(result)
@@ -123,16 +124,22 @@ class Transition(object):
         return True
 
 
+# TODO This class is badly broken and just here for testing. Get rid of it as soon as possible!
 class FromCheckpointTransition(Transition):
-    def __init__(self, input_checkpoint):
-        self._input = input_checkpoint
+    def __init__(self, checkpoint):
         super(FromCheckpointTransition, self).__init__([])
+        self._checkpoint = checkpoint
+        self._trigger_child_rerun()
+
+    def append(self, data):
+        self._checkpoint[-1].append(data)
+        self._trigger_child_update()
 
     def _get_input(self):
-        return self._input
+        return DataCheckpoint()
 
     def _do_transition(self, data):
-        return data
+        return DataCheckpoint()
 
 
 class IdentityTransition(Transition):

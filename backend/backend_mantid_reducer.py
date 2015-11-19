@@ -18,6 +18,9 @@ from mantid.kernel import DateAndTime
 from checkpoint import CompositeCheckpoint
 from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
 
+from transition import FromCheckpointTransition
+from mantid_rebin_transition import MantidRebinTransition
+
 
 mantid.config['MultiThreaded.MaxCores'] = '1'
 #if MPI.COMM_WORLD.Get_rank() != 0:
@@ -33,27 +36,27 @@ class BackendMantidRebinner(object):
         self.bin_values = [None]
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
-        self.checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
-        self.histo_checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
+        self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
+        self.rebin_transition = MantidRebinTransition(self.dummy_transition)
 
     def get_bin_boundaries(self):
-        return self.histo_checkpoint[-1].data.readX(0)
+        return self.rebin_transition.get_checkpoint()[-1].data.readX(0)
 
     def get_bin_values(self):
-        return self.histo_checkpoint[-1].data.readY(0)
+        return self.rebin_transition.get_checkpoint()[-1].data.readY(0)
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
-        tmp = mantid.Rebin(InputWorkspace=self.checkpoint[-1].data, Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_checkpoint[-1].replace(tmp)
+        self.rebin_transition.bin_parameters = self._target_bin_parameters
+        self.rebin_transition.trigger_rerun()
         bin_boundaries = deepcopy(self.get_bin_boundaries())
         bin_values = deepcopy(self.get_bin_values())
 
         self.update_result(bin_boundaries, bin_values)
 
     def reset(self):
-        self.checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
-        self.histo_checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
+        self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
+        self.rebin_transition = MantidRebinTransition(self.dummy_transition)
         self.resultLock.acquire()
         self.bin_boundaries = [None]
         self.bin_values = [None]
@@ -64,8 +67,8 @@ class BackendMantidRebinner(object):
         self.bin_boundaries.append(None)
         self.bin_values.append(None)
         self.resultLock.release()
-        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
+        self.dummy_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
+        self.rebin_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
@@ -149,9 +152,7 @@ class BackendMantidReducer(BackendWorker):
         return ws
 
     def _merge(self, ws_new):
-        histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
-        self._rebinner.checkpoint[-1].append(ws_new)
-        self._rebinner.histo_checkpoint[-1].append(histo_ws_new)
+        self._rebinner.dummy_transition.append(ws_new)
         bin_boundaries = self._rebinner.get_bin_boundaries()
         bin_values = self._rebinner.get_bin_values()
 
