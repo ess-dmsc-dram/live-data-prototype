@@ -46,8 +46,8 @@ class BackendMantidRebinner(object):
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(self.result_indices[-1]), Params=self.current_bin_parameters, PreserveEvents=False)
-        self.checkpoint[-1].replace(AnalysisDataService['accumulated_binned-{}'.format(self.result_indices[-1])])
+        tmp = mantid.Rebin(InputWorkspace=self.ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        self.checkpoint[-1].replace(tmp)
         bin_boundaries = deepcopy(self.get_bin_boundaries())
         bin_values = deepcopy(self.get_bin_values())
 
@@ -100,8 +100,8 @@ class BackendMantidRebinner(object):
         mantid.SumSpectra(InputWorkspace=tmp, OutputWorkspace='accumulated-{}'.format(index))
         mantid.DeleteWorkspace(Workspace='tmp')
         self.ws = AnalysisDataService['accumulated-{}'.format(index)]
-        mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(index), Params=self.current_bin_parameters, PreserveEvents=False)
-        self.checkpoint[-1].replace(AnalysisDataService['accumulated_binned-{}'.format(index)])
+        tmp = mantid.Rebin(InputWorkspace=self.ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        self.checkpoint[-1].replace(tmp)
 
 
 class BackendMantidReducer(BackendWorker):
