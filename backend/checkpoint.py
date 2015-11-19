@@ -53,10 +53,10 @@ class DataCheckpoint(Checkpoint):
 
 
 class CompositeCheckpoint(Checkpoint):
-    def __init__(self, leaf_count=0):
+    def __init__(self, checkpoint_type=DataCheckpoint, leaf_count=0):
         self._leafs = []
         for i in range(leaf_count):
-            self._leafs.append(DataCheckpoint())
+            self._leafs.append(checkpoint_type())
 
     def __len__(self):
         return len(self._leafs)

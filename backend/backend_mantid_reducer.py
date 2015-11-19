@@ -33,10 +33,8 @@ class BackendMantidRebinner(object):
         self.bin_values = [None]
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
-        self.checkpoint = CompositeCheckpoint()
-        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self.histo_checkpoint = CompositeCheckpoint()
-        self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
+        self.checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
+        self.histo_checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
         self._init_workspace()
 
     def get_bin_boundaries(self):
@@ -55,10 +53,8 @@ class BackendMantidRebinner(object):
         self.update_result(bin_boundaries, bin_values)
 
     def reset(self):
-        self.checkpoint = CompositeCheckpoint()
-        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self.histo_checkpoint = CompositeCheckpoint()
-        self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
+        self.checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
+        self.histo_checkpoint = CompositeCheckpoint(MantidWorkspaceCheckpoint, 1)
         self.resultLock.acquire()
         self.bin_boundaries = [None]
         self.bin_values = [None]
