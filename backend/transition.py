@@ -42,9 +42,9 @@ class Transition(object):
     def _make_composite_if_necessary(self, checkpoint_in, checkpoint_out):
         if isinstance(checkpoint_in, CompositeCheckpoint):
             if not isinstance(checkpoint_out, CompositeCheckpoint):
-                return CompositeCheckpoint(type(checkpoint_in[0]), len(checkpoint_in))
+                return CompositeCheckpoint(self._get_output_checkpoint_type(checkpoint_in[0]), len(checkpoint_in))
             elif len(checkpoint_in) != len(checkpoint_out):
-                return CompositeCheckpoint(type(checkpoint_in[0]), len(checkpoint_in))
+                return CompositeCheckpoint(self._get_output_checkpoint_type(checkpoint_in[0]), len(checkpoint_in))
         return checkpoint_out
 
     def _recurse_trigger(self, can_update, checkpoint_in, checkpoint_out):
@@ -122,6 +122,9 @@ class Transition(object):
         """Can this transition work on data updates, i.e., partial data?
         Reimplement this in child classes to change the default (True)"""
         return True
+
+    def _get_output_checkpoint_type(self, input_checkpoint):
+        return type(input_checkpoint)
 
 
 # TODO This class is badly broken and just here for testing. Get rid of it as soon as possible!

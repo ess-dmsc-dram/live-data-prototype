@@ -19,19 +19,16 @@ class ResultPublisher(Controllable):
         self.connect()
 
         while True:
-            self.eventListener.resultLock.acquire()
             if self._publish_historical_data:
                 self._publish_history()
-            while self.eventListener.bin_boundaries[-1] == None:
-                self.eventListener.resultLock.release()
+            while self.eventListener.gather_histogram_transition.get_checkpoint()[-1].data == None:
                 time.sleep(1)
-                self.eventListener.resultLock.acquire()
-            packet = numpy.concatenate((self.eventListener.bin_boundaries[-1], self.eventListener.bin_values[-1]))
-            self.socket.send_json(len(self.eventListener.bin_boundaries)-1, flags=zmq.SNDMORE)
+            boundaries, values = self.eventListener.gather_histogram_transition.get_checkpoint()[-1].data
+            packet = numpy.concatenate((boundaries, values))
+            self.socket.send_json(len(self.eventListener.gather_histogram_transition.get_checkpoint())-1, flags=zmq.SNDMORE)
             self.socket.send(packet)
             # TODO is it safe to clear/release here? When is zmq done using the buffer?
             #self.eventListener.result = None
-            self.eventListener.resultLock.release()
             time.sleep(self.update_rate)
 
     def connect(self):
