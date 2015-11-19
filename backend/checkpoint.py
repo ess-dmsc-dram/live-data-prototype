@@ -14,21 +14,42 @@ class DataCheckpoint(Checkpoint):
         self._data = None
         self._data_diff = None
 
+    @property
+    def data(self):
+        return self._data
+
     def get_data(self):
         return self._data, self._data_diff
 
+    def clear(self):
+        self._clear_data()
+        self._clear_data_diff()
+
     def replace(self, data):
-        self._data_diff = None
-        self._data = data
+        self._clear_data_diff()
+        self._set_data(data)
 
     def append(self, data):
-        self._data_diff = data
+        self._set_data_diff(data)
         if self._data is None:
-            self._data = data
+            self._set_data(data)
         else:
-            self._data += data
-            # ADS, your friendly helper...
-            #DeleteWorkspace(data)
+            self._append_data(data)
+
+    def _set_data_diff(self, data):
+        self._data_diff = data
+
+    def _clear_data_diff(self):
+        self._data_diff = None
+
+    def _set_data(self, data):
+        self._data = data
+
+    def _clear_data(self):
+        self._data = None
+
+    def _append_data(self, data):
+        self._data += data
 
 
 class CompositeCheckpoint(Checkpoint):
@@ -64,6 +85,10 @@ class CompositeCheckpoint(Checkpoint):
 
     def get_data(self):
         return [ leaf.get_data() for leaf in self._leafs ]
+
+    def clear(self):
+        for leaf in self._leafs:
+            leaf.clear()
 
     def replace(self, data):
         # data should be iterable of same length as leaf

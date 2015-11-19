@@ -15,6 +15,10 @@ from mantid.api import AnalysisDataService
 from mantid.api import StorageMode
 from mantid.kernel import DateAndTime
 
+from checkpoint import CompositeCheckpoint
+from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
+
+
 mantid.config['MultiThreaded.MaxCores'] = '1'
 #if MPI.COMM_WORLD.Get_rank() != 0:
 mantid.ConfigService.setConsoleLogLevel(0)
@@ -30,21 +34,29 @@ class BackendMantidRebinner(object):
         self.bin_values = [None]
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
+        self.checkpoint = CompositeCheckpoint()
+        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self._init_workspace(self.result_indices[-1])
+
+    def get_bin_boundaries(self):
+        return self.checkpoint[-1].data.readX(0)
+
+    def get_bin_values(self):
+        return self.checkpoint[-1].data.readY(0)
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
         mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(self.result_indices[-1]), Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_ws = AnalysisDataService['accumulated_binned-{}'.format(self.result_indices[-1])]
-        bin_boundaries = deepcopy(self.histo_ws.readX(0))
-        bin_values = deepcopy(self.histo_ws.readY(0))
+        self.checkpoint[-1].replace(AnalysisDataService['accumulated_binned-{}'.format(self.result_indices[-1])])
+        bin_boundaries = deepcopy(self.get_bin_boundaries())
+        bin_values = deepcopy(self.get_bin_values())
 
         self.update_result(bin_boundaries, bin_values)
 
     def reset(self):
         for i in self.result_indices:
             mantid.DeleteWorkspace(Workspace='accumulated-{}'.format(i))
-            mantid.DeleteWorkspace(Workspace='accumulated_binned-{}'.format(i))
+        self.checkpoint.clear()
         self.resultLock.acquire()
         self.result_indices = [self.result_indices[-1] + 1]
         self.bin_boundaries = [None]
@@ -58,6 +70,7 @@ class BackendMantidRebinner(object):
         self.bin_boundaries.append(None)
         self.bin_values.append(None)
         self.resultLock.release()
+        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self._init_workspace(self.result_indices[-1])
 
     def get_parameter_dict(self):
@@ -88,7 +101,7 @@ class BackendMantidRebinner(object):
         mantid.DeleteWorkspace(Workspace='tmp')
         self.ws = AnalysisDataService['accumulated-{}'.format(index)]
         mantid.Rebin(InputWorkspace=self.ws, OutputWorkspace='accumulated_binned-{}'.format(index), Params=self.current_bin_parameters, PreserveEvents=False)
-        self.histo_ws = AnalysisDataService['accumulated_binned-{}'.format(index)]
+        self.checkpoint[-1].replace(AnalysisDataService['accumulated_binned-{}'.format(index)])
 
 
 class BackendMantidReducer(BackendWorker):
@@ -160,11 +173,10 @@ class BackendMantidReducer(BackendWorker):
     def _merge(self, ws_new):
         histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
         self._rebinner.ws += ws_new
-        self._rebinner.histo_ws += histo_ws_new
+        self._rebinner.checkpoint[-1].append(histo_ws_new)
         AnalysisDataService.Instance().remove(ws_new.name())
-        AnalysisDataService.Instance().remove(histo_ws_new.name())
-        bin_boundaries = self._rebinner.histo_ws.readX(0)
-        bin_values = self._rebinner.histo_ws.readY(0)
+        bin_boundaries = self._rebinner.get_bin_boundaries()
+        bin_values = self._rebinner.get_bin_values()
 
         self._rebinner.update_result(bin_boundaries, bin_values)
 
