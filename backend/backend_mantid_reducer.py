@@ -29,14 +29,15 @@ class BackendMantidRebinner(object):
     def __init__(self):
         self._comm = MPI.COMM_WORLD
         self.resultLock = threading.Lock()
-        self.result_indices = [0]
         self.bin_boundaries = [None]
         self.bin_values = [None]
         self.current_bin_parameters = '0.4,0.1,5'
         self._target_bin_parameters = None
+        self.checkpoint = CompositeCheckpoint()
+        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self.histo_checkpoint = CompositeCheckpoint()
         self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self._init_workspace(self.result_indices[-1])
+        self._init_workspace()
 
     def get_bin_boundaries(self):
         return self.histo_checkpoint[-1].data.readX(0)
@@ -46,7 +47,7 @@ class BackendMantidRebinner(object):
 
     def rebin(self):
         self.current_bin_parameters = self._target_bin_parameters
-        tmp = mantid.Rebin(InputWorkspace=self.ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        tmp = mantid.Rebin(InputWorkspace=self.checkpoint[-1].data, Params=self.current_bin_parameters, PreserveEvents=False)
         self.histo_checkpoint[-1].replace(tmp)
         bin_boundaries = deepcopy(self.get_bin_boundaries())
         bin_values = deepcopy(self.get_bin_values())
@@ -54,24 +55,24 @@ class BackendMantidRebinner(object):
         self.update_result(bin_boundaries, bin_values)
 
     def reset(self):
-        for i in self.result_indices:
-            mantid.DeleteWorkspace(Workspace='accumulated-{}'.format(i))
-        self.histo_checkpoint.clear()
+        self.checkpoint = CompositeCheckpoint()
+        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
+        self.histo_checkpoint = CompositeCheckpoint()
+        self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self.resultLock.acquire()
-        self.result_indices = [self.result_indices[-1] + 1]
         self.bin_boundaries = [None]
         self.bin_values = [None]
         self.resultLock.release()
-        self._init_workspace(self.result_indices[-1])
+        self._init_workspace()
 
     def next(self):
         self.resultLock.acquire()
-        self.result_indices.append(self.result_indices[-1] + 1)
         self.bin_boundaries.append(None)
         self.bin_values.append(None)
         self.resultLock.release()
+        self.checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
         self.histo_checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
-        self._init_workspace(self.result_indices[-1])
+        self._init_workspace()
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
@@ -87,7 +88,7 @@ class BackendMantidRebinner(object):
             self.bin_values[-1] = sum(gathered)
         self.resultLock.release()
 
-    def _init_workspace(self, index):
+    def _init_workspace(self):
         tmp = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
         AnalysisDataService.Instance().addOrReplace('tmp', tmp)
         tmp =  AnalysisDataService['tmp']
@@ -97,10 +98,9 @@ class BackendMantidRebinner(object):
         tmp.setStorageMode(StorageMode.Distributed)
         mantid.ConvertUnits(InputWorkspace=tmp, OutputWorkspace=tmp, Target='dSpacing')
         mantid.Rebin(InputWorkspace=tmp, OutputWorkspace=tmp, Params=self.current_bin_parameters)
-        mantid.SumSpectra(InputWorkspace=tmp, OutputWorkspace='accumulated-{}'.format(index))
-        mantid.DeleteWorkspace(Workspace='tmp')
-        self.ws = AnalysisDataService['accumulated-{}'.format(index)]
-        tmp = mantid.Rebin(InputWorkspace=self.ws, Params=self.current_bin_parameters, PreserveEvents=False)
+        tmp = mantid.SumSpectra(InputWorkspace=tmp)
+        self.checkpoint[-1].replace(tmp)
+        tmp = mantid.Rebin(InputWorkspace=self.checkpoint[-1].data, Params=self.current_bin_parameters, PreserveEvents=False)
         self.histo_checkpoint[-1].replace(tmp)
 
 
@@ -172,9 +172,8 @@ class BackendMantidReducer(BackendWorker):
 
     def _merge(self, ws_new):
         histo_ws_new = mantid.Rebin(InputWorkspace=ws_new, Params=self._rebinner.current_bin_parameters, PreserveEvents=False)
-        self._rebinner.ws += ws_new
+        self._rebinner.checkpoint[-1].append(ws_new)
         self._rebinner.histo_checkpoint[-1].append(histo_ws_new)
-        AnalysisDataService.Instance().remove(ws_new.name())
         bin_boundaries = self._rebinner.get_bin_boundaries()
         bin_values = self._rebinner.get_bin_values()
 
