@@ -1,4 +1,7 @@
 class Checkpoint(object):
+    def __iter__(self):
+        yield self
+
     def get_data(self):
         raise RuntimeError('Checkpoint.get_data() must be implemented in child classes!')
 
@@ -19,7 +22,7 @@ class DataCheckpoint(Checkpoint):
         return self._data
 
     def get_data(self):
-        return self._data, self._data_diff
+        return self._data#, self._data_diff
 
     def clear(self):
         self._clear_data()
@@ -52,51 +55,65 @@ class DataCheckpoint(Checkpoint):
     def _append_data(self, data):
         self._data += data
 
+    def zip_data_with_key(self, key, data):
+        if key is None:
+            return {}
+        return { key:data }
+
 
 class CompositeCheckpoint(Checkpoint):
     def __init__(self, checkpoint_type=DataCheckpoint, leaf_count=0):
-        self._leafs = []
+        self._leaves = []
         for i in range(leaf_count):
-            self._leafs.append(checkpoint_type())
+            self._leaves.append(checkpoint_type())
+
+    def __iter__(self):
+        for checkpoint in self._leaves:
+            for leaf in checkpoint:
+                yield leaf
 
     def __len__(self):
-        return len(self._leafs)
+        return len(self._leaves)
 
     def __getitem__(self, index):
-        return self._leafs[index]
+        return self._leaves[index]
 
     def __getslice__(self, i, j):
-        return self._leafs[i:j]
+        return self._leaves[i:j]
 
     # TODO should this be supported?
     def __setitem__(self, index, value):
-        self._leafs[index] = value
+        self._leaves[index] = value
 
     def __delitem__(self, index):
-        del self._leafs[index]
+        del self._leaves[index]
 
     def __delslice__(self, i, j):
-        del self._leafs[i:j]
+        del self._leaves[i:j]
 
     def add_checkpoint(self, checkpoint):
-        self._leafs.append(checkpoint)
+        self._leaves.append(checkpoint)
 
     def remove_checkpoint(self, index):
         del self[index]
 
     def get_data(self):
-        return [ leaf.get_data() for leaf in self._leafs ]
+        return [ leaf.get_data() for leaf in self._leaves ]
+
+    def zip_data_with_key(self, key, data):
+        return [ leaf.zip_data_with_key(key, data[i]) for i, leaf in enumerate(self._leaves) ]
 
     def clear(self):
-        for leaf in self._leafs:
+        for leaf in self._leaves:
             leaf.clear()
 
     def replace(self, data):
         # data should be iterable of same length as leaf
-        for leaf, leaf_data in zip(self._leafs, data):
+        for leaf, leaf_data in zip(self._leaves, data):
             leaf.replace(leaf_data)
+            #print('replaced leaf data: {} {}'.format(leaf_data, leaf.get_data()))
 
     def append(self, data):
         # data should be iterable of same length as leaf
-        for leaf, leaf_data in zip(self._leafs, data):
+        for leaf, leaf_data in zip(self._leaves, data):
             leaf.append(leaf_data)

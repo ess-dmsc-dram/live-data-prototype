@@ -19,6 +19,8 @@ from checkpoint import CompositeCheckpoint
 from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
 
 from transition import FromCheckpointTransition
+#from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
+#from reductions_transition import ReductionsTransition
 from mantid_rebin_transition import MantidRebinTransition
 from gather_histogram_transition import GatherHistogramTransition
 
