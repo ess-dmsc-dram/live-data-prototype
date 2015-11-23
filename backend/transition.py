@@ -89,12 +89,7 @@ class Transition(object):
         out = data[-2]
         out_update = data[-1]
         inputs = data[:-2]
-        if inputs.count(None) > 0:
-            input_data = [ i for i in inputs ]
-        else:
-            input_data = [ i.data for i in inputs ]
-        # TODO check for updates when we have multiple inputs
-        if input_data.count(None) != len(inputs):
+        if all(inputs):
             result = self._do_transition(inputs)
             if can_update:
                 out.append(result)

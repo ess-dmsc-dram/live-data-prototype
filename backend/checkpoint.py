@@ -17,6 +17,9 @@ class DataCheckpoint(Checkpoint):
         self._data = None
         self._data_diff = None
 
+    def __nonzero__(self):
+        return self._data is not None
+
     @property
     def data(self):
         return self._data
