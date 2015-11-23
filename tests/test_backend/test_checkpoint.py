@@ -1,7 +1,22 @@
 import unittest
 
+from backend.checkpoint import Checkpoint
 from backend.checkpoint import DataCheckpoint
 from backend.checkpoint import CompositeCheckpoint
+
+
+class TestCheckpoint(unittest.TestCase):
+    def setUp(self):
+        self._checkpoint = Checkpoint()
+
+    def test_clear(self):
+        self.assertRaises(RuntimeError, self._checkpoint.clear)
+
+    def test_replace(self):
+        self.assertRaises(RuntimeError, self._checkpoint.replace, 'abc')
+
+    def test_append(self):
+        self.assertRaises(RuntimeError, self._checkpoint.append, 'abc')
 
 
 class TestDataCheckpoint(unittest.TestCase):
