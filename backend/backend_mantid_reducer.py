@@ -57,9 +57,6 @@ class BackendMantidRebinner(object):
 
     def next(self):
         self.dummy_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
-        #TODO Once Checkpoints supports non-destructive resize we do not have to add things downstream.
-        self.rebin_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
-        self.gather_histogram_transition.get_checkpoint().add_checkpoint(HistogramCheckpoint())
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}

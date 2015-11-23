@@ -75,8 +75,11 @@ class Transition(object):
                 for i in checkpoint_in:
                     out.add_checkpoint(self._clone_checkpoint_structure(i))
                 return out
+            elif len(checkpoint_in) > len(checkpoint_out):
+                for i in range(len(checkpoint_out), len(checkpoint_in)):
+                    checkpoint_out.add_checkpoint(self._clone_checkpoint_structure(checkpoint_in[i]))
+                return checkpoint_out
             elif len(checkpoint_in) != len(checkpoint_out):
-                # TODO non-destructive resize
                 out = CompositeCheckpoint()
                 for i in checkpoint_in:
                     out.add_checkpoint(self._clone_checkpoint_structure(i))
