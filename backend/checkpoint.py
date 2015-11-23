@@ -2,6 +2,9 @@ class Checkpoint(object):
     def __iter__(self):
         yield self
 
+    def clear(self):
+        raise RuntimeError('Checkpoint.clear() must be implemented in child classes!')
+
     def replace(self, data):
         raise RuntimeError('Checkpoint.replace() must be implemented in child classes!')
 
