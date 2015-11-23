@@ -68,9 +68,8 @@ class CompositeCheckpoint(Checkpoint):
             self._leaves.append(checkpoint_type())
 
     def __iter__(self):
-        for checkpoint in self._leaves:
-            for leaf in checkpoint:
-                yield leaf
+        for leaf in self._leaves:
+            yield leaf
 
     def __len__(self):
         return len(self._leaves)
@@ -111,9 +110,18 @@ class CompositeCheckpoint(Checkpoint):
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leaves, data):
             leaf.replace(leaf_data)
-            #print('replaced leaf data: {} {}'.format(leaf_data, leaf.get_data()))
 
     def append(self, data):
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leaves, data):
             leaf.append(leaf_data)
+
+
+def coiterate(mastertree, slavetrees):
+    if isinstance(mastertree, CompositeCheckpoint):
+        for i, masterchild in enumerate(mastertree):
+            slavechildren = tuple( s[i] for s in slavetrees )
+            for item in coiterate(masterchild, slavechildren):
+                yield item
+    else:
+        yield (mastertree,) + slavetrees
