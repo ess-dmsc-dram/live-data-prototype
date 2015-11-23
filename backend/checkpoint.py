@@ -15,7 +15,6 @@ class Checkpoint(object):
 class DataCheckpoint(Checkpoint):
     def __init__(self):
         self._data = None
-        self._data_diff = None
 
     def __nonzero__(self):
         return self._data is not None
@@ -25,29 +24,19 @@ class DataCheckpoint(Checkpoint):
         return self._data
 
     def get_data(self):
-        return self._data#, self._data_diff
+        return self._data
 
     def clear(self):
         self._clear_data()
-        self._clear_data_diff()
 
     def replace(self, data):
-        self._clear_data_diff()
         self._set_data(data)
 
     def append(self, data):
         if self._data is None:
-            self.replace(data)
+            self._initialize_from(data)
         else:
             self._append_data(data)
-            # Careful: _set_data_diff may invalidate data, so we call this last.
-            self._set_data_diff(data)
-
-    def _set_data_diff(self, data):
-        self._data_diff = data
-
-    def _clear_data_diff(self):
-        self._data_diff = None
 
     def _set_data(self, data):
         self._data = data
@@ -57,6 +46,9 @@ class DataCheckpoint(Checkpoint):
 
     def _append_data(self, data):
         self._data += data
+
+    def _initialize_from(self, data):
+        self.replace(data)
 
 
 class CompositeCheckpoint(Checkpoint):

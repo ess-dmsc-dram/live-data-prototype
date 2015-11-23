@@ -13,4 +13,4 @@ class HistogramCheckpoint(DataCheckpoint):
         return deepcopy(self._data)
 
     def _append_data(self, data):
-        self._data = (data[0], self._data[1] + data[1])
+        self._data = (deepcopy(data[0]), self._data[1] + data[1])

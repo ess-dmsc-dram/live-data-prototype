@@ -1,15 +1,14 @@
 import mantid.simpleapi as mantid
 
-from transition import Transition
+from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
+from mantid_workspace_transition import MantidWorkspaceTransition
 
 
-class MantidRebinTransition(Transition):
+class MantidRebinTransition(MantidWorkspaceTransition):
     def __init__(self, parent):
         self.bin_parameters = '0.4,0.1,5'
-        super(MantidRebinTransition, self).__init__([parent])
+        super(MantidRebinTransition, self).__init__(create_checkpoint = lambda: MantidWorkspaceCheckpoint(), parents=[parent])
 
     def _do_transition(self, data):
-        if data is None:
-            return data
-        tmp = mantid.Rebin(data, Params=self.bin_parameters, PreserveEvents=False)
+        tmp = mantid.Rebin(data[0].data, Params=self.bin_parameters, PreserveEvents=False)
         return tmp

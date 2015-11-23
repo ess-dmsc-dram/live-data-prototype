@@ -36,6 +36,8 @@ class Transition(object):
         data.update(update)
         result = self._trigger(can_update, data.values())
         self._trigger_child_update(result)
+        # We return the result in case the caller needs it for some reason.
+        return result
 
     def trigger_rerun(self):
         can_update = False
@@ -131,7 +133,12 @@ class FromCheckpointTransition(Transition):
 
     def append(self, data):
         self._checkpoint[-1].append(data)
-        self._trigger_child_update()
+        leaf_type = type(self._checkpoint[-1])
+        update = leaf_type()
+        update.replace(data)
+        update_tree = CompositeCheckpoint(leaf_type, len(self._checkpoint))
+        update_tree[-1] = update
+        self._trigger_child_update(update_tree)
 
     def _do_transition(self, data):
         return DataCheckpoint()

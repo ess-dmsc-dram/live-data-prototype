@@ -17,6 +17,7 @@ from mantid.kernel import DateAndTime
 
 from checkpoint import CompositeCheckpoint
 from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
+from histogram_checkpoint import HistogramCheckpoint
 
 from transition import FromCheckpointTransition
 #from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
@@ -58,7 +59,7 @@ class BackendMantidRebinner(object):
         self.dummy_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
         #TODO Once Checkpoints supports non-destructive resize we do not have to add things downstream.
         self.rebin_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
-        self.rebin_transition.get_checkpoint().add_checkpoint(HistogramCheckpoint())
+        self.gather_histogram_transition.get_checkpoint().add_checkpoint(HistogramCheckpoint())
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
