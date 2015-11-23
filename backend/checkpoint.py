@@ -58,11 +58,6 @@ class DataCheckpoint(Checkpoint):
     def _append_data(self, data):
         self._data += data
 
-    def zip_data_with_key(self, key, data):
-        if key is None:
-            return {}
-        return { key:data }
-
 
 class CompositeCheckpoint(Checkpoint):
     def __init__(self, checkpoint_type=DataCheckpoint, leaf_count=0):
@@ -101,9 +96,6 @@ class CompositeCheckpoint(Checkpoint):
 
     def get_data(self):
         return [ leaf.get_data() for leaf in self._leaves ]
-
-    def zip_data_with_key(self, key, data):
-        return [ leaf.zip_data_with_key(key, data[i]) for i, leaf in enumerate(self._leaves) ]
 
     def clear(self):
         for leaf in self._leaves:
