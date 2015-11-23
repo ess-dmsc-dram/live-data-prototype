@@ -2,9 +2,6 @@ class Checkpoint(object):
     def __iter__(self):
         yield self
 
-    def get_data(self):
-        raise RuntimeError('Checkpoint.get_data() must be implemented in child classes!')
-
     def replace(self, data):
         raise RuntimeError('Checkpoint.replace() must be implemented in child classes!')
 
@@ -21,9 +18,6 @@ class DataCheckpoint(Checkpoint):
 
     @property
     def data(self):
-        return self._data
-
-    def get_data(self):
         return self._data
 
     def clear(self):
@@ -80,14 +74,15 @@ class CompositeCheckpoint(Checkpoint):
     def __delslice__(self, i, j):
         del self._leaves[i:j]
 
+    @property
+    def data(self):
+        return [ leaf.data for leaf in self._leaves ]
+
     def add_checkpoint(self, checkpoint):
         self._leaves.append(checkpoint)
 
     def remove_checkpoint(self, index):
         del self[index]
-
-    def get_data(self):
-        return [ leaf.get_data() for leaf in self._leaves ]
 
     def clear(self):
         for leaf in self._leaves:
