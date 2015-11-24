@@ -1,25 +1,10 @@
-import threading
-from copy import deepcopy
-import time
 import json
 
 import numpy
-from mpi4py import MPI
 
 from backend_worker import BackendWorker
 from reductions import BasicPowderDiffraction
 
-import mantid.simpleapi as mantid
-from mantid.api import WorkspaceFactory
-from mantid.api import AnalysisDataService
-from mantid.api import StorageMode
-from mantid.kernel import DateAndTime
-
-from checkpoint import CompositeCheckpoint
-from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
-from histogram_checkpoint import HistogramCheckpoint
-
-from transition import FromCheckpointTransition
 from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
 from reductions_transition import ReductionTransition
 from splitting_transition import SplittingTransition
