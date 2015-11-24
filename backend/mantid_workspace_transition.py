@@ -8,7 +8,7 @@ from transition import Transition
 
 
 class MantidWorkspaceTransition(Transition):
-    def __init__(self, create_checkpoint = lambda: DataCheckpoint(), parents = []):
+    def __init__(self, create_checkpoint = lambda: MantidWorkspaceCheckpoint(), parents = []):
         super(MantidWorkspaceTransition, self).__init__(create_checkpoint, parents)
 
     def trigger_update(self, update):
