@@ -8,13 +8,12 @@ from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
 
 
 class Transition(object):
-    def __init__(self, create_checkpoint = lambda: DataCheckpoint(), parents = []):
+    def __init__(self, parents = []):
         # TODO merge inputs into CompositeCheckpoint? No! They may have nothing to do with each other
         # TODO move such an init to child classes? i.e., child defines what outputs it has!
         # no.. just replace this later by appropriate CompositeCheckpoint
         # TODO would it make sense to init this as Checkpoint() instead?
         self._parents = []
-        self._create_checkpoint = create_checkpoint
         self._checkpoint = None
         self._transitions = []
         for p in parents:
@@ -120,6 +119,9 @@ class Transition(object):
         """Can this transition work on data updates, i.e., partial data?
         Reimplement this in child classes to change the default (True)"""
         return True
+
+    def _create_checkpoint(self):
+        return DataCheckpoint()
 
     def _get_output_checkpoint_type(self, input_checkpoint):
         return MantidWorkspaceCheckpoint

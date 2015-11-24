@@ -8,8 +8,8 @@ from transition import Transition
 
 
 class MantidWorkspaceTransition(Transition):
-    def __init__(self, create_checkpoint = lambda: MantidWorkspaceCheckpoint(), parents = []):
-        super(MantidWorkspaceTransition, self).__init__(create_checkpoint, parents)
+    def __init__(self, parents = []):
+        super(MantidWorkspaceTransition, self).__init__(parents)
 
     def trigger_update(self, update):
         result = Transition.trigger_update(self, update)
@@ -20,3 +20,6 @@ class MantidWorkspaceTransition(Transition):
         #        if base.data.name() != diff.data.name():
         #            print('WARNING: deleting {}'.format(diff.data.name()))
         #            mantid.DeleteWorkspace(diff.data.name())
+
+    def _create_checkpoint(self):
+        return MantidWorkspaceCheckpoint()

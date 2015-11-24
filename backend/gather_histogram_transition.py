@@ -8,7 +8,7 @@ from histogram_checkpoint import HistogramCheckpoint
 class GatherHistogramTransition(Transition):
     def __init__(self, parent):
         self._comm = MPI.COMM_WORLD
-        super(GatherHistogramTransition, self).__init__(create_checkpoint = lambda: HistogramCheckpoint(), parents=[parent])
+        super(GatherHistogramTransition, self).__init__(parents=[parent])
 
     def _do_transition(self, data):
         data = data[0].data
@@ -18,3 +18,6 @@ class GatherHistogramTransition(Transition):
         if self._comm.Get_rank() == 0:
             bin_values = sum(gathered)
         return bin_boundaries, bin_values
+
+    def _create_checkpoint(self):
+        return HistogramCheckpoint()
