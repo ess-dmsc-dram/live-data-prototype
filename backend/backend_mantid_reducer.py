@@ -37,8 +37,6 @@ class BackendMantidReducer(BackendWorker):
         BackendWorker.__init__(self)
         self._data_queue_in = data_queue_in
         self._reducer = BasicPowderDiffraction()
-        self._packet_index = 0
-        self._bin_parameters = '0.4,0.1,5'
         self._filter_pulses = False
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
         self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
@@ -82,24 +80,6 @@ class BackendMantidReducer(BackendWorker):
         self._create_workspace_from_events_transition.process(event_data, self._pulse_time)
         return True
 
-    def _create_workspace_from_events(self, event_data):
-        ws = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
-        AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
-        ws =  AnalysisDataService['POWDIFF_test']
-        mantid.LoadInstrument(Workspace=ws, Filename='/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml')
-        ws.padSpectra()
-        ws.getAxis(0).setUnit('tof')
-        ws.setStorageMode(StorageMode.Distributed)
-        for i in event_data:
-            ws.getEventList(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(self._pulse_time))
-        return ws
-
-    def _reduce(self, ws):
-        ws = self._reducer.reduce(ws, 'summed-{}'.format(self._packet_index))
-        # TODO: ADS issues, see Mantid issue #14120. Can we keep this out of ADS?
-        self._packet_index += 1
-        return ws
-
     def get_bin_boundaries(self):
         return self._rebin_transition.get_checkpoint()[-1].data.readX(0)
 
@@ -111,11 +91,10 @@ class BackendMantidReducer(BackendWorker):
 
     @property
     def bin_parameters(self):
-        return self._bin_parameters
+        return self._rebin_transition._bin_parameters
 
     @bin_parameters.setter
     def bin_parameters(self, parameters):
-        self._bin_parameters = parameters
         self._rebin_transition.set_bin_parameters(parameters)
 
     @property
