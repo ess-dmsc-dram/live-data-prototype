@@ -34,24 +34,14 @@ mantid.ConfigService.setConsoleLogLevel(0)
 
 
 class BackendMantidRebinner(object):
-    def __init__(self):
-        self._target_bin_parameters = None
-
     def get_bin_boundaries(self):
         return self.rebin_transition.get_checkpoint()[-1].data.readX(0)
 
     def get_bin_values(self):
         return self.rebin_transition.get_checkpoint()[-1].data.readY(0)
 
-    def rebin(self):
-        self.rebin_transition.bin_parameters = self._target_bin_parameters
-        self.rebin_transition.trigger_rerun()
-
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
-
-    def set_bin_parameters(self, bin_parameters):
-        self._target_bin_parameters = str(bin_parameters)
 
 
 class BackendMantidReducer(BackendWorker):
@@ -133,8 +123,7 @@ class BackendMantidReducer(BackendWorker):
     @bin_parameters.setter
     def bin_parameters(self, parameters):
         self._bin_parameters = parameters
-        self._rebinner.set_bin_parameters(parameters)
-        self._rebinner.rebin()
+        self._rebinner.rebin_transition.set_bin_parameters(parameters)
 
     @property
     def filter_pulses(self):
