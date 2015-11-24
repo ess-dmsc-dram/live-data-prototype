@@ -166,7 +166,7 @@ class BackendMantidReducer(BackendWorker):
 
     @reset.setter
     def reset(self, dummy):
-        self._rebinner.reset()
+        self._splitting_transition.reset()
 
     @property
     def next(self):

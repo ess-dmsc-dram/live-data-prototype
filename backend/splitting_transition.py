@@ -8,6 +8,11 @@ class SplittingTransition(Transition):
         self._split_count = 1
         super(SplittingTransition, self).__init__(parents=[parent])
 
+    def reset(self):
+        self._split_count = 1
+        self._checkpoint = None
+        self.trigger_rerun()
+
     def next(self):
         self._split_count += 1
         self._checkpoint.add_checkpoint(MantidWorkspaceCheckpoint())
