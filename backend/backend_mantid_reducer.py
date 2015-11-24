@@ -20,8 +20,9 @@ from mantid_workspace_checkpoint import MantidWorkspaceCheckpoint
 from histogram_checkpoint import HistogramCheckpoint
 
 from transition import FromCheckpointTransition
-#from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
-#from reductions_transition import ReductionsTransition
+from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
+from reductions_transition import ReductionTransition
+from splitting_transition import SplittingTransition
 from mantid_rebin_transition import MantidRebinTransition
 from gather_histogram_transition import GatherHistogramTransition
 
@@ -36,9 +37,9 @@ class BackendMantidRebinner(object):
     def __init__(self):
         self._comm = MPI.COMM_WORLD
         self._target_bin_parameters = None
-        self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
-        self.rebin_transition = MantidRebinTransition(self.dummy_transition)
-        self.gather_histogram_transition = GatherHistogramTransition(self.rebin_transition)
+        #self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
+        #self.rebin_transition = MantidRebinTransition(self.dummy_transition)
+        #self.gather_histogram_transition = GatherHistogramTransition(self.rebin_transition)
 
     def get_bin_boundaries(self):
         return self.rebin_transition.get_checkpoint()[-1].data.readX(0)
@@ -74,6 +75,11 @@ class BackendMantidReducer(BackendWorker):
         self._packet_index = 0
         self._bin_parameters = '0.4,0.1,5'
         self._filter_pulses = False
+        self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
+        self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
+        self._splitting_transition = SplittingTransition(self._reduction_transition)
+        rebinner.rebin_transition = MantidRebinTransition(self._splitting_transition)
+        rebinner.gather_histogram_transition = GatherHistogramTransition(rebinner.rebin_transition)
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -108,9 +114,10 @@ class BackendMantidReducer(BackendWorker):
         if self._filter_pulses and self._drop_pulse:
             return True
         event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
-        event_ws = self._create_workspace_from_events(event_data)
-        reduced = self._reduce(event_ws)
-        self._rebinner.dummy_transition.append(reduced)
+        self._create_workspace_from_events_transition.process(event_data, self._pulse_time)
+        #event_ws = self._create_workspace_from_events(event_data)
+        #reduced = self._reduce(event_ws)
+        #self._rebinner.dummy_transition.append(reduced)
         return True
 
     def _create_workspace_from_events(self, event_data):
