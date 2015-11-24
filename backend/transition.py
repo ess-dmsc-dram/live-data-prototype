@@ -44,11 +44,11 @@ class Transition(object):
         self._trigger(can_update, data.values())
         self._trigger_child_rerun()
 
-    def _get_name(self):
-        return 'parent-{}'.format(id(self))
+    def get_name(self):
+        return 'transition-{}'.format(id(self))
 
     def _get_parent_names(self):
-        return [ 'parent-{}'.format(id(p())) for p in self._parents ]
+        return [ p().get_name() for p in self._parents ]
 
     def _trigger(self, can_update, data):
         if data:
@@ -106,7 +106,7 @@ class Transition(object):
 
     def _trigger_child_update(self, update):
         for t in self._transitions:
-            t.trigger_update({'parent-{}'.format(id(self)):update})
+            t.trigger_update({self.get_name():update})
 
     def _trigger_child_rerun(self):
         for t in self._transitions:
