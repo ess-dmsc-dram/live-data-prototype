@@ -35,11 +35,7 @@ mantid.ConfigService.setConsoleLogLevel(0)
 
 class BackendMantidRebinner(object):
     def __init__(self):
-        self._comm = MPI.COMM_WORLD
         self._target_bin_parameters = None
-        #self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
-        #self.rebin_transition = MantidRebinTransition(self.dummy_transition)
-        #self.gather_histogram_transition = GatherHistogramTransition(self.rebin_transition)
 
     def get_bin_boundaries(self):
         return self.rebin_transition.get_checkpoint()[-1].data.readX(0)
@@ -50,14 +46,6 @@ class BackendMantidRebinner(object):
     def rebin(self):
         self.rebin_transition.bin_parameters = self._target_bin_parameters
         self.rebin_transition.trigger_rerun()
-
-    def reset(self):
-        self.dummy_transition = FromCheckpointTransition(CompositeCheckpoint(MantidWorkspaceCheckpoint, 1))
-        self.rebin_transition = MantidRebinTransition(self.dummy_transition)
-        self.gather_histogram_transition = GatherHistogramTransition(self.rebin_transition)
-
-    def next(self):
-        self.dummy_transition.get_checkpoint().add_checkpoint(MantidWorkspaceCheckpoint())
 
     def get_parameter_dict(self):
         return {'bin_parameters':(self.set_bin_parameters, 'string')}
@@ -115,9 +103,6 @@ class BackendMantidReducer(BackendWorker):
             return True
         event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
         self._create_workspace_from_events_transition.process(event_data, self._pulse_time)
-        #event_ws = self._create_workspace_from_events(event_data)
-        #reduced = self._reduce(event_ws)
-        #self._rebinner.dummy_transition.append(reduced)
         return True
 
     def _create_workspace_from_events(self, event_data):
