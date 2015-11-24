@@ -27,11 +27,6 @@ from mantid_rebin_transition import MantidRebinTransition
 from gather_histogram_transition import GatherHistogramTransition
 
 
-mantid.config['MultiThreaded.MaxCores'] = '1'
-#if MPI.COMM_WORLD.Get_rank() != 0:
-mantid.ConfigService.setConsoleLogLevel(0)
-
-
 class BackendMantidReducer(BackendWorker):
     def __init__(self, data_queue_in):
         BackendWorker.__init__(self)
