@@ -99,7 +99,8 @@ class CompositeCheckpoint(Checkpoint):
     def append(self, data):
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leaves, data):
-            leaf.append(leaf_data)
+            if leaf_data is not None:
+                leaf.append(leaf_data)
 
 
 def coiterate(mastertree, slavetrees):

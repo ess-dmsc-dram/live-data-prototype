@@ -174,4 +174,4 @@ class BackendMantidReducer(BackendWorker):
 
     @next.setter
     def next(self, dummy):
-        self._rebinner.next()
+        self._splitting_transition.next()
