@@ -21,11 +21,11 @@ class ResultPublisher(Controllable):
         while True:
             if self._publish_historical_data:
                 self._publish_history()
-            while self.eventListener.gather_histogram_transition.get_checkpoint()[-1].data == None:
+            while self.eventListener._gather_histogram_transition.get_checkpoint()[-1].data == None:
                 time.sleep(1)
-            boundaries, values = self.eventListener.gather_histogram_transition.get_checkpoint()[-1].data
+            boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[-1].data
             packet = numpy.concatenate((boundaries, values))
-            self.socket.send_json(len(self.eventListener.gather_histogram_transition.get_checkpoint())-1, flags=zmq.SNDMORE)
+            self.socket.send_json(len(self.eventListener._gather_histogram_transition.get_checkpoint())-1, flags=zmq.SNDMORE)
             self.socket.send(packet)
             # TODO is it safe to clear/release here? When is zmq done using the buffer?
             #self.eventListener.result = None

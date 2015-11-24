@@ -32,23 +32,10 @@ mantid.config['MultiThreaded.MaxCores'] = '1'
 mantid.ConfigService.setConsoleLogLevel(0)
 
 
-
-class BackendMantidRebinner(object):
-    def get_bin_boundaries(self):
-        return self.rebin_transition.get_checkpoint()[-1].data.readX(0)
-
-    def get_bin_values(self):
-        return self.rebin_transition.get_checkpoint()[-1].data.readY(0)
-
-    def get_parameter_dict(self):
-        return {'bin_parameters':(self.set_bin_parameters, 'string')}
-
-
 class BackendMantidReducer(BackendWorker):
-    def __init__(self, data_queue_in, rebinner):
+    def __init__(self, data_queue_in):
         BackendWorker.__init__(self)
         self._data_queue_in = data_queue_in
-        self._rebinner = rebinner
         self._reducer = BasicPowderDiffraction()
         self._packet_index = 0
         self._bin_parameters = '0.4,0.1,5'
@@ -56,8 +43,8 @@ class BackendMantidReducer(BackendWorker):
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
         self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
         self._splitting_transition = SplittingTransition(self._reduction_transition)
-        rebinner.rebin_transition = MantidRebinTransition(self._splitting_transition)
-        rebinner.gather_histogram_transition = GatherHistogramTransition(rebinner.rebin_transition)
+        self._rebin_transition = MantidRebinTransition(self._splitting_transition)
+        self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -113,6 +100,12 @@ class BackendMantidReducer(BackendWorker):
         self._packet_index += 1
         return ws
 
+    def get_bin_boundaries(self):
+        return self._rebin_transition.get_checkpoint()[-1].data.readX(0)
+
+    def get_bin_values(self):
+        return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
+
     def get_parameter_dict(self):
         return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger', 'filter_pulses':'bool'}
 
@@ -123,7 +116,7 @@ class BackendMantidReducer(BackendWorker):
     @bin_parameters.setter
     def bin_parameters(self, parameters):
         self._bin_parameters = parameters
-        self._rebinner.rebin_transition.set_bin_parameters(parameters)
+        self._rebin_transition.set_bin_parameters(parameters)
 
     @property
     def filter_pulses(self):
@@ -132,7 +125,7 @@ class BackendMantidReducer(BackendWorker):
     @filter_pulses.setter
     def filter_pulses(self, filter_pulses):
         self._filter_pulses = filter_pulses
-        self._rebinner.next()
+        self._splitting_transition.next()
 
     @property
     def reset(self):

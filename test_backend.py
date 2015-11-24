@@ -1,5 +1,4 @@
 from backend import BackendMantidReducer
-from backend import BackendMantidRebinner
 from backend import ResultPublisher
 from backend import ZMQQueueServer
 from backend import ZMQQueueClient
@@ -19,9 +18,8 @@ event_queue_in = ZMQQueueClient(port=event_queue_port)
 event_queue_in_thread = threading.Thread(target=event_queue_in.run)
 event_queue_in_thread.start()
 
-rebinner = BackendMantidRebinner()
 
-reducer = BackendMantidReducer(event_queue_in, rebinner)
+reducer = BackendMantidReducer(event_queue_in)
 reducer_thread = threading.Thread(target=reducer.run)
 reducer_thread.start()
 
@@ -30,7 +28,7 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
     reducer_controller_thread.start()
 
-    resultPublisher = ResultPublisher(rebinner)
+    resultPublisher = ResultPublisher(reducer)
     resultPublisher_thread = threading.Thread(target=resultPublisher.run)
     resultPublisher_thread.start()
 
