@@ -18,6 +18,7 @@ class ResultPublisher(Controllable):
         print "Starting ResultPublisher"
         self.connect()
 
+        self._publish_clear()
         while True:
             count = len(self.eventListener._gather_histogram_transition.get_checkpoint())
             if count != self._last_count:
