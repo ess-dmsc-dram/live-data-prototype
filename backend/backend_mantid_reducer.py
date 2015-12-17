@@ -1,4 +1,5 @@
 import json
+from threading import Lock
 
 import numpy
 
@@ -15,6 +16,7 @@ from gather_histogram_transition import GatherHistogramTransition
 class BackendMantidReducer(BackendWorker):
     def __init__(self, data_queue_in):
         BackendWorker.__init__(self)
+        self._lock = Lock()
         self._data_queue_in = data_queue_in
         self._reducer = BasicPowderDiffraction()
         self._filter_pulses = False
@@ -57,7 +59,9 @@ class BackendMantidReducer(BackendWorker):
         if self._filter_pulses and self._drop_pulse:
             return True
         event_data = numpy.frombuffer(data, dtype={'names':['detector_id', 'tof'], 'formats':['int32','float32']})
+        self._lock.acquire()
         self._create_workspace_from_events_transition.process(event_data, self._pulse_time)
+        self._lock.release()
         return True
 
     def get_bin_boundaries(self):
@@ -75,7 +79,9 @@ class BackendMantidReducer(BackendWorker):
 
     @bin_parameters.setter
     def bin_parameters(self, parameters):
+        self._lock.acquire()
         self._rebin_transition.set_bin_parameters(parameters)
+        self._lock.release()
 
     @property
     def filter_pulses(self):
