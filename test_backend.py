@@ -1,3 +1,4 @@
+from logger import setup_global_logger
 from backend import BackendMantidReducer
 from backend import ResultPublisher
 from backend import ZMQQueueServer
@@ -10,6 +11,8 @@ import time
 import numpy
 from mpi4py import MPI
 
+
+setup_global_logger(MPI.COMM_WORLD.Get_rank())
 
 rank = MPI.COMM_WORLD.Get_rank()
 event_queue_port = 11000 + rank
