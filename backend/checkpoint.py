@@ -51,6 +51,7 @@ class DataCheckpoint(Checkpoint):
 class CompositeCheckpoint(Checkpoint):
     def __init__(self, checkpoint_type=DataCheckpoint, leaf_count=0):
         self._leaves = []
+        self._checkpoint_type = checkpoint_type
         for i in range(leaf_count):
             self._leaves.append(checkpoint_type())
 
@@ -92,6 +93,11 @@ class CompositeCheckpoint(Checkpoint):
             leaf.clear()
 
     def replace(self, data):
+        # TODO is is a good idea to let replace change the size of a checkpoint?
+        if len(self._leaves) != len(data):
+            self._leaves = []
+            for i in range(len(data)):
+                self._leaves.append(self._checkpoint_type())
         # data should be iterable of same length as leaf
         for leaf, leaf_data in zip(self._leaves, data):
             leaf.replace(leaf_data)

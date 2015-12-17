@@ -11,7 +11,11 @@ from mantid_workspace_transition import MantidWorkspaceTransition
 
 class CreateMantidWorkspaceFromEventsTransition(MantidWorkspaceTransition):
     def __init__(self):
+        self._log_data = {}
         super(CreateMantidWorkspaceFromEventsTransition, self).__init__(parents=[])
+
+    def set_log_data(self, data):
+        self._log_data = dict(data)
 
     def process(self, event_data, pulse_time):
         update = DataCheckpoint()
@@ -29,4 +33,10 @@ class CreateMantidWorkspaceFromEventsTransition(MantidWorkspaceTransition):
         ws.setStorageMode(StorageMode.Distributed)
         for i in event_data:
             ws.getEventList(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(pulse_time))
+        self._add_log_data(ws, pulse_time)
         return ws
+
+    def _add_log_data(self, ws, pulse_time):
+        mantid.AddSampleLog(ws, LogName='start_time', LogText=str(DateAndTime(pulse_time)))
+        for key, value in self._log_data.items():
+            mantid.AddTimeSeriesLog(ws, Name=key, Time=str(DateAndTime(pulse_time)), Value=value)

@@ -7,11 +7,17 @@ class MantidWorkspaceCheckpoint(DataCheckpoint):
     def __init__(self):
         super(MantidWorkspaceCheckpoint, self).__init__()
 
+    def __del__(self):
+        if self._data is not None:
+            mantid.DeleteWorkspace(self._data.name())
+
     def _set_data(self, data):
         if self._data is not None:
             mantid.DeleteWorkspace(self._data.name())
         if data is not None:
             self._data = mantid.CloneWorkspace(InputWorkspace=data, OutputWorkspace='MantidWorkspaceCheckpoint-{}-data'.format(id(self)))
+        else:
+            self._data = data
 
     def _clear_data(self):
         if self._data is not None:

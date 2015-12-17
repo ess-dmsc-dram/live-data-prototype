@@ -8,7 +8,7 @@ from reductions import BasicPowderDiffraction
 
 from create_mantid_workspace_from_events_transition import CreateMantidWorkspaceFromEventsTransition
 from reductions_transition import ReductionTransition
-from splitting_transition import SplittingTransition
+from mantid_filter_transition import MantidFilterTransition
 from mantid_rebin_transition import MantidRebinTransition
 from gather_histogram_transition import GatherHistogramTransition
 
@@ -22,8 +22,8 @@ class BackendMantidReducer(BackendWorker):
         self._filter_pulses = False
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
         self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
-        self._splitting_transition = SplittingTransition(self._reduction_transition)
-        self._rebin_transition = MantidRebinTransition(self._splitting_transition)
+        self._filter_transition = MantidFilterTransition(self._reduction_transition)
+        self._rebin_transition = MantidRebinTransition(self._filter_transition)
         self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
 
     def _process_command(self, command):
@@ -51,6 +51,7 @@ class BackendMantidReducer(BackendWorker):
         self._pulse_time = str(data['pulse_time'])
         payload = data['payload']
         lattice_spacing = float(payload['unit_cell'].split()[0])
+        self._create_workspace_from_events_transition.set_log_data({'lattice_spacing':lattice_spacing})
         self._drop_pulse = abs(lattice_spacing - 5.431) > 0.01
         print('Received meta data {}, ignoring.'.format(data['payload']))
         return True
@@ -71,7 +72,7 @@ class BackendMantidReducer(BackendWorker):
         return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':'str', 'reset':'trigger', 'next':'trigger', 'filter_pulses':'bool'}
+        return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool'}
 
     @property
     def bin_parameters(self):
@@ -93,17 +94,11 @@ class BackendMantidReducer(BackendWorker):
         self._splitting_transition.next()
 
     @property
-    def reset(self):
-        return False
+    def filter_interval_parameters(self):
+        return 'min,step,max'
 
-    @reset.setter
-    def reset(self, dummy):
-        self._splitting_transition.reset()
-
-    @property
-    def next(self):
-        return False
-
-    @next.setter
-    def next(self, dummy):
-        self._splitting_transition.next()
+    @filter_interval_parameters.setter
+    def filter_interval_parameters(self, parameters):
+        self._lock.acquire()
+        self._filter_transition.set_interval_parameters(parameters)
+        self._lock.release()
