@@ -12,16 +12,20 @@ class ResultPublisher(Controllable):
         self.eventListener = eventListener
         self._update_rate = 1.0
         self.socket = None
+        self._last_count = 0
 
     def run(self):
         print "Starting ResultPublisher"
         self.connect()
 
         while True:
-            while self.eventListener._gather_histogram_transition.get_checkpoint()[-1].data == None:
-                time.sleep(1)
-            for i in range(len(self.eventListener._gather_histogram_transition.get_checkpoint())):
-                self._publish(i)
+            count = len(self.eventListener._gather_histogram_transition.get_checkpoint())
+            if count != self._last_count:
+                self._publish_clear()
+                self._last_count = count
+            for i in range(count):
+                if self.eventListener._gather_histogram_transition.get_checkpoint()[i]:
+                    self._publish(i)
             time.sleep(self.update_rate)
 
     def connect(self):
@@ -31,10 +35,18 @@ class ResultPublisher(Controllable):
         self.socket.bind(uri)
         print 'Bound to ' + uri
 
+    def _create_header(self, command, index):
+        return { 'command':command, 'index':index }
+
+    def _publish_clear(self):
+        header = self._create_header('clear', None)
+        self.socket.send_json(header)
+
     def _publish(self, index):
         boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[index].data
         packet = numpy.concatenate((boundaries, values))
-        self.socket.send_json(index, flags=zmq.SNDMORE)
+        header = self._create_header('data', index)
+        self.socket.send_json(header, flags=zmq.SNDMORE)
         self.socket.send(packet)
 
     def get_parameter_dict(self):

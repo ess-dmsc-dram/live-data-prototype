@@ -13,8 +13,11 @@ class Plotter(object):
         self.win.resize(800,350)
         self.win.setWindowTitle('pyqtgraph example: Histogram')
         self.plt1 = self.win.addPlot()
-        self.plt1.addLegend()
         self.curves = {}
+
+    def clear(self):
+        self.curves = {}
+        self.plt1.clear()
 
     def update(self):
         while self.dataListener.data:
@@ -26,6 +29,7 @@ class Plotter(object):
 
 
 class DataListener(QtCore.QObject):
+    clear = QtCore.pyqtSignal()
     new_data = QtCore.pyqtSignal()
 
     def __init__(self, host, port):
@@ -38,9 +42,13 @@ class DataListener(QtCore.QObject):
         print 'Starting DataListener...'
         self.connect()
         while True:
-            index,x,y = self.get_histogram()
-            self.data.append((index,x,y))
-            self.new_data.emit()
+            command, index = self._receive_header()
+            if command == 'data':
+                x,y = self.get_histogram()
+                self.data.append((index,x,y))
+                self.new_data.emit()
+            elif command == 'clear':
+                self.clear.emit()
 
     def connect(self):
         self.context = zmq.Context()
@@ -51,7 +59,12 @@ class DataListener(QtCore.QObject):
         print 'Substribed to result publisher at ' + uri
 
     def get_histogram(self):
-        index = self.socket.recv_json()
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)
         x,y = numpy.array_split(data, 2)
-        return index,x,y
+        return x,y
+
+    def _receive_header(self):
+        header = self.socket.recv_json()
+        command = header['command']
+        index = header['index']
+        return command, index

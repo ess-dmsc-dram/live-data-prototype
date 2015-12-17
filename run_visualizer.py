@@ -13,6 +13,7 @@ data_listener_thread = Thread(target=data_listener.run)
 data_listener_thread.daemon = True
 plotter = Plotter(data_listener)
 
+data_listener.clear.connect(plotter.clear)
 data_listener.new_data.connect(plotter.update)
 data_listener_thread.start()
 
