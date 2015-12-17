@@ -16,11 +16,20 @@ class Transition(object):
         self._parents = []
         self._checkpoint = None
         self._transitions = []
+        self._accumulate_data = False
         for p in parents:
             # We keep a *weakref* to upstream checkpoints to break cyclic references.
             self._parents.append(weakref.ref(p))
             p._add_transition(self)
         self.trigger_rerun()
+
+    @property
+    def accumulate_data(self):
+        return self._accumulate_data
+
+    @accumulate_data.setter
+    def accumulate_data(self, accumulate):
+        self._accumulate_data = bool(accumulate)
 
     def get_checkpoint(self):
         return self._checkpoint
@@ -53,11 +62,17 @@ class Transition(object):
     def _trigger(self, can_update, data):
         if data:
             # TODO handle multiple input checkpoints
-            self._checkpoint = self._clone_checkpoint_structure(data[0], self._checkpoint)
             out_update = self._clone_checkpoint_structure(data[0])
+            if self._accumulate_data:
+                self._checkpoint = self._clone_checkpoint_structure(data[0], self._checkpoint)
+            else:
+                self._checkpoint = out_update
         else:
-            self._checkpoint = self._create_checkpoint()
             out_update = self._create_checkpoint()
+            if self._accumulate_data:
+                self._checkpoint = self._create_checkpoint()
+            else:
+                self._checkpoint = out_update
         mastertree = None
         if len(data) > 0:
             mastertree = data[0]
@@ -95,10 +110,13 @@ class Transition(object):
         inputs = data[:-2]
         if all(inputs):
             result = self._do_transition(inputs)
-            if can_update:
-                out.append(result)
-            else:
-                out.replace(result)
+            # When not accumulating out data, out refers to same object
+            # as out_update, so we do not modify both.
+            if not out is out_update:
+                if can_update:
+                    out.append(result)
+                else:
+                    out.replace(result)
             out_update.replace(result)
 
     def _add_transition(self, transition):
