@@ -26,7 +26,7 @@ class CreateMantidWorkspaceFromEventsTransition(MantidWorkspaceTransition):
         ws = WorkspaceFactory.Instance().create("EventWorkspace", 1, 1, 1);
         AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws =  AnalysisDataService['POWDIFF_test']
-        mantid.LoadInstrument(Workspace=ws, Filename='/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml')
+        mantid.LoadInstrument(Workspace=ws, Filename='/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
         ws.padSpectra()
         ws.getAxis(0).setUnit('tof')
         for i in event_data:
