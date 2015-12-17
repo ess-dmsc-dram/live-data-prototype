@@ -1,7 +1,6 @@
 import mantid.simpleapi as mantid
 from mantid.api import WorkspaceFactory
 from mantid.api import AnalysisDataService
-from mantid.api import StorageMode
 from mantid.kernel import DateAndTime
 
 from checkpoint import DataCheckpoint
@@ -30,7 +29,6 @@ class CreateMantidWorkspaceFromEventsTransition(MantidWorkspaceTransition):
         mantid.LoadInstrument(Workspace=ws, Filename='/home/simon/data/fake_powder_diffraction_data/POWDIFF_Definition.xml')
         ws.padSpectra()
         ws.getAxis(0).setUnit('tof')
-        ws.setStorageMode(StorageMode.Distributed)
         for i in event_data:
             ws.getEventList(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(pulse_time))
         self._add_log_data(ws, pulse_time)
