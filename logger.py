@@ -2,7 +2,7 @@ import logging
 
 
 def setup_global_logger(rank):
-    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+    formatter = logging.Formatter(fmt='%(asctime)s.%(msecs).03d - %(levelname)s - %(module)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     logger = logging.getLogger()
 
