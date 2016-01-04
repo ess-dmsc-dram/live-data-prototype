@@ -26,7 +26,7 @@ class BackendWorker(Controllable):
             if what == 1:
                 self._try_process_data()
             elif what == 2:
-                print('{} got command'.format(time.time()))
+                self._logger.debug('{} got command'.format(time.time()))
                 self._process_command(payload)
             else:
                 # no data, no command, sleep till next beat
@@ -50,7 +50,7 @@ class BackendWorker(Controllable):
             return self._heartbeat.get()
 
     def _process_command(self, command):
-        print('Rank {} {}: {} (processing not implemented)'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
+        self._logger.debug('Rank {} {}: {} (processing not implemented)'.format(MPI.COMM_WORLD.Get_rank(), time.time(), command))
 
     def _try_process_data(self):
         while not self._process_data():
