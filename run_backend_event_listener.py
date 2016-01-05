@@ -10,10 +10,11 @@ from mpi4py import MPI
 
 from logger import setup_global_logger
 
+
 rank = MPI.COMM_WORLD.Get_rank()
 event_queue_port = 11000 + rank
 
-setup_global_logger(rank)
+setup_global_logger(level=command_line_parser.get_log_level(), rank=rank)
 
 event_queue_out = ZMQQueueServer(port=event_queue_port)
 event_queue_out_thread = threading.Thread(target=event_queue_out.run)

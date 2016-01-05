@@ -8,14 +8,19 @@ import ports
 
 import threading
 import time
+import argparse
 import numpy
 from mpi4py import MPI
 
 
-setup_global_logger(MPI.COMM_WORLD.Get_rank())
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-l", "--log", type=str,  default='info', help="Set the log level. Allowed values are 'critical', 'error', 'warning', 'info', and 'debug'.")
+args = parser.parse_args()
 
 rank = MPI.COMM_WORLD.Get_rank()
 event_queue_port = 11000 + rank
+
+setup_global_logger(level=args.log, rank=rank)
 
 event_queue_in = ZMQQueueClient(port=event_queue_port)
 event_queue_in_thread = threading.Thread(target=event_queue_in.run)

@@ -9,7 +9,7 @@ from visualizer import DataListener
 from visualizer import Plotter
 
 
-setup_global_logger()
+setup_global_logger(level=command_line_parser.get_log_level())
 
 data_listener = DataListener(host=command_line_parser.get_host(), port=ports.result_stream)
 data_listener_thread = Thread(target=data_listener.run)

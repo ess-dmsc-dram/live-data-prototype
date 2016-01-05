@@ -9,16 +9,18 @@ from streamer import create_BraggEventGenerator
 from streamer import start_streamer_daemon_threads
 
 
-setup_global_logger()
-
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-i", "--instrument-definition", type=str,  default='data/POWDIFF_Definition.xml', help="Mantid instrument definition file.")
 parser.add_argument("-u", "--unit-cell", type=str,  default='5.431 5.431 5.431', help="Mantid instrument definition file.")
 parser.add_argument("-s", "--space-group", type=str,  default='F d -3 m', help="")
 parser.add_argument("-a", "--atoms", type=str,  default='Si 0 0 0 1.0 0.01', help="")
 parser.add_argument("-[", "--min-plane-distance", type=float,  default=0.5, help="")
 parser.add_argument("-]", "--max-plane-distance", type=float,  default=4.0, help="")
+parser.add_argument("-l", "--log", type=str,  default='info', help="Set the log level. Allowed values are 'critical', 'error', 'warning', 'info', and 'debug'.")
+
 args = parser.parse_args()
+
+setup_global_logger(level=args.log)
 
 base_generator = create_BraggEventGenerator(args.instrument_definition, (args.unit_cell, args.space_group, args.atoms), args.min_plane_distance, args.max_plane_distance)
 parameter_controller = ParameterControlServer(port=ports.streamer_control)
