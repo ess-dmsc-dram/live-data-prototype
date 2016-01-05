@@ -2,6 +2,8 @@ from collections import deque
 import zmq
 import time
 
+from logger import log
+
 
 # TODO: use IPC with a pipe instead of TCP
 
@@ -20,7 +22,7 @@ class ZMQQueueServer(object):
         return len(self._deque)
 
     def run(self):
-        print('Starting ZMQQueueServer')
+        log.info('Starting ZMQQueueServer')
         self._connect(self._host, self._port)
         while True:
             # wait for data
@@ -39,7 +41,7 @@ class ZMQQueueServer(object):
         self._socket = context.socket(zmq.PUSH)
         uri = 'tcp://{0}:{1:d}'.format(host, port)
         self._socket.bind(uri)
-        print('ZMQQueueServer: Bound to ' + uri)
+        log.info('ZMQQueueServer: Bound to ' + uri)
 
 
 class ZMQQueueClient(object):
@@ -53,7 +55,7 @@ class ZMQQueueClient(object):
         return len(self._deque)
 
     def run(self):
-        print('Starting ZMQQueueClient')
+        log.info('Starting ZMQQueueClient')
         while True:
             header = self._socket.recv_json()
             payload = self._socket.recv()
@@ -69,4 +71,4 @@ class ZMQQueueClient(object):
         self._socket = context.socket(zmq.PULL)
         uri = 'tcp://{0}:{1:d}'.format(host, port)
         self._socket.connect(uri)
-        print('ZMQQueueClient: Connected to ZMQQueueServer at ' + uri)
+        log.info('ZMQQueueClient: Connected to ZMQQueueServer at ' + uri)

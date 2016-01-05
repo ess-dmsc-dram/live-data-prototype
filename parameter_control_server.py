@@ -1,10 +1,10 @@
-import logging
 import zmq
+
+from logger import log
 
 
 class ParameterControlServer(object):
     def __init__(self, controllees=[], host='*', port=10000, version=1):
-        self._logger = logging.getLogger()
         self.host = host
         self.port = port
         self.set_controllees(controllees)
@@ -32,7 +32,7 @@ class ParameterControlServer(object):
         self.add_controllees(controllees)
 
     def run(self):
-        self._logger.info('Starting ParameterControlServer...')
+        log.info('Starting ParameterControlServer...')
         self.connect()
 
         while True:
@@ -52,11 +52,11 @@ class ParameterControlServer(object):
         self.socket = context.socket(zmq.REP)
         uri = 'tcp://{0}:{1}'.format(self.host, self.port)
         self.socket.bind(uri)
-        self._logger.info('Bound to ' + uri)
+        log.info('Bound to ' + uri)
 
     def recv_packet(self):
         packet = self.socket.recv_json()
-        self._logger.info('{}'.format(packet))
+        log.info('{}'.format(packet))
         return packet
 
     def send_parameters(self):

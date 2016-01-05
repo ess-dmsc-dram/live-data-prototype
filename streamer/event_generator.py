@@ -4,6 +4,7 @@ import time
 import numpy
 
 from controllable import Controllable
+from logger import log
 
 
 class EventGenerator(Controllable):
@@ -21,7 +22,7 @@ class EventGenerator(Controllable):
         self._pulse_id = 0
 
     def run(self):
-        print 'Starting EventGenerator...'
+        log.info('Starting EventGenerator...')
         self.init_sleep_time()
         while True:
             while self._paused:
@@ -61,7 +62,7 @@ class EventGenerator(Controllable):
     def update_sleep_time(self):
         self.end_new = time.time()
         elapsed = self.end_new - self.end_old
-        print 'sleep time: {} current pulse rate: {}/second'.format(self.sleep_time, 1.0/elapsed)
+        log.info('sleep time: {} current pulse rate: {}/second'.format(self.sleep_time, 1.0/elapsed))
         if self.sleep_time == 0.0:
             self.sleep_time = max(0.0, 1.0/self._pulses_per_second - elapsed)
         else:

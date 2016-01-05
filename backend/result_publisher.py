@@ -2,6 +2,7 @@ import time
 import numpy
 import zmq
 
+from logger import log
 import ports
 from controllable import Controllable
 
@@ -15,7 +16,7 @@ class ResultPublisher(Controllable):
         self._last_count = 0
 
     def run(self):
-        print "Starting ResultPublisher"
+        log.info("Starting ResultPublisher")
         self.connect()
 
         self._publish_clear()
@@ -34,7 +35,7 @@ class ResultPublisher(Controllable):
         self.socket = context.socket(zmq.PUB)
         uri = 'tcp://*:{0:d}'.format(ports.result_stream)
         self.socket.bind(uri)
-        print 'Bound to ' + uri
+        log.info('Bound to ' + uri)
 
     def _create_header(self, command, index):
         return { 'command':command, 'index':index }

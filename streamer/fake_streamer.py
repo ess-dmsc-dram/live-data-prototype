@@ -1,6 +1,7 @@
 import zmq
 
 import ports
+from logger import log
 
 
 class FakeEventStreamer(object):
@@ -14,7 +15,7 @@ class FakeEventStreamer(object):
         self.socket = context.socket(zmq.PUSH)
         uri = 'tcp://*:{0:d}'.format(ports.event_stream)
         self.socket.bind(uri)
-        print 'Bound to ' + uri
+        log.info('Bound to {}'.format(uri))
 
     def _send_meta_data(self, meta_data):
         header = self._create_meta_data_header()
@@ -43,7 +44,7 @@ class FakeEventStreamer(object):
         return header
 
     def run(self):
-        print 'Starting FakeEventStreamer...'
+        log.info('Starting FakeEventStreamer...')
         self.connect()
 
         while True:

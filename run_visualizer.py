@@ -2,11 +2,14 @@ from threading import Thread
 
 from pyqtgraph.Qt import QtGui
 
+from logger import setup_global_logger
 import ports
 import command_line_parser
 from visualizer import DataListener
 from visualizer import Plotter
 
+
+setup_global_logger()
 
 data_listener = DataListener(host=command_line_parser.get_host(), port=ports.result_stream)
 data_listener_thread = Thread(target=data_listener.run)

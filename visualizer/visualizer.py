@@ -5,6 +5,8 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore
 import numpy
 
+from logger import log
+
 
 class Plotter(object):
     def __init__(self, dataListener):
@@ -39,7 +41,7 @@ class DataListener(QtCore.QObject):
         self._port = port
 
     def run(self):
-        print 'Starting DataListener...'
+        log.info('Starting DataListener...')
         self.connect()
         while True:
             command, index = self._receive_header()
@@ -56,7 +58,7 @@ class DataListener(QtCore.QObject):
         uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
-        print 'Substribed to result publisher at ' + uri
+        log.info('Substribed to result publisher at ' + uri)
 
     def get_histogram(self):
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)

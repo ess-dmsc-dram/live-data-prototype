@@ -3,6 +3,7 @@ import numpy
 import zmq
 from mpi4py import MPI
 
+from logger import log
 from backend_worker import BackendWorker
 
 
@@ -17,7 +18,7 @@ class BackendEventListener(BackendWorker):
         self._port = port
 
     def _startup(self):
-        print 'Starting EventListener...'
+        log.info('Starting EventListener...')
         self._connect()
 
     def _can_process_data(self):
@@ -38,7 +39,7 @@ class BackendEventListener(BackendWorker):
             self.socket = context.socket(zmq.PULL)
             uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
             self.socket.connect(uri)
-            print 'Connected to event streamer at ' + uri
+            log.info('Connected to event streamer at {}'.format(uri))
 
     def _receive_packet(self):
         if self._comm.Get_rank() == 0:

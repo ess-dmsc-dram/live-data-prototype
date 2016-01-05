@@ -2,11 +2,14 @@ import threading
 import time
 import argparse
 
+from logger import setup_global_logger
 import ports
 from parameter_control_server import ParameterControlServer
 from streamer import create_BraggEventGenerator
 from streamer import start_streamer_daemon_threads
 
+
+setup_global_logger()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--instrument-definition", type=str,  default='data/POWDIFF_Definition.xml', help="Mantid instrument definition file.")

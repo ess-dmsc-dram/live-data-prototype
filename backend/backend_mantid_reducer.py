@@ -3,6 +3,8 @@ from threading import Lock
 
 import numpy
 
+from logger import log
+
 from backend_worker import BackendWorker
 from reductions import BasicPowderDiffraction
 
@@ -56,7 +58,7 @@ class BackendMantidReducer(BackendWorker):
         lattice_spacing = float(payload['unit_cell'].split()[0])
         self._create_workspace_from_events_transition.set_log_data({'lattice_spacing':lattice_spacing})
         self._drop_pulse = abs(lattice_spacing - 5.431) > 0.01
-        print('Received meta data {}, ignoring.'.format(data['payload']))
+        log.debug('Received meta data {}, ignoring.'.format(data['payload']))
         return True
 
     def _process_event_data(self, data):
