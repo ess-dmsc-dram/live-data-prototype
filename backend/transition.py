@@ -140,19 +140,3 @@ class Transition(object):
 
     def _create_checkpoint(self):
         return DataCheckpoint()
-
-
-class IdentityTransition(Transition):
-    def __init__(self, parent):
-        super(IdentityTransition, self).__init__(parents=[parent])
-
-    def _do_transition(self, data):
-        return data[0].data
-
-
-class UpperCaseTransition(Transition):
-    def __init__(self, parent):
-        super(UpperCaseTransition, self).__init__(parents=[parent])
-
-    def _do_transition(self, data):
-        return data[0].data.upper()
