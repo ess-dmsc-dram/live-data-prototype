@@ -1,9 +1,8 @@
-from optparse import OptionParser
+import argparse
 
-parser = OptionParser()
-parser.add_option("-H", "--host", type='string', dest='host', default='localhost',
-                  help='Host to connect to. Defaults to localhost.')
-(options, args) = parser.parse_args()
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-H", "--host", type=str, default='localhost', help='Host to connect to.')
+args = parser.parse_args()
 
 def get_host():
-    return options.host
+    return args.host
