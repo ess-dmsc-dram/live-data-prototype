@@ -54,7 +54,7 @@ class Transition(object):
         self._trigger_child_rerun()
 
     def get_name(self):
-        return self.__class__.__name__ + ' {}'.format(id(self))
+        return 'transition-{}'.format(id(self))
 
     def _get_parent_names(self):
         return [ p().get_name() for p in self._parents ]

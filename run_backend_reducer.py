@@ -31,9 +31,6 @@ reducer = BackendMantidReducer(event_queue_in)
 reducer_thread = threading.Thread(target=reducer.run)
 reducer_thread.start()
 
-reducer.show_tree()
-
-
 if MPI.COMM_WORLD.Get_rank() == 0:
     reducer_controller = ParameterControlServer(controllees=[reducer], port=ports.rebin_control)
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
