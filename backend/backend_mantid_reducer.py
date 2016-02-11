@@ -23,13 +23,30 @@ class BackendMantidReducer(BackendWorker):
         self._reducer = BasicPowderDiffraction()
         self._filter_pulses = False
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
+	self._reduction_transition1=ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
         self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
         self._reduction_transition.accumulate_data = True
+	self._filter_transition1=MantidFilterTransition(self._reduction_transition1)
         self._filter_transition = MantidFilterTransition(self._reduction_transition)
         self._filter_transition.accumulate_data = True
         self._rebin_transition = MantidRebinTransition(self._filter_transition)
         self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
         self._gather_histogram_transition.accumulate_data = True
+
+    def show_tree(self):
+	self.tree(self._create_workspace_from_events_transition, ' ')
+
+    def tree(self, transition, padding):
+	print padding[:-1] + '+-' + transition.get_name()
+	padding = padding + ' '
+	transitions = []
+	transitions = transition._transitions
+	count = 0
+	for a in transitions:
+	    count +=1
+	    print padding + '|'
+	    self.tree(a, padding+"|")
+
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
