@@ -32,21 +32,7 @@ class BackendMantidReducer(BackendWorker):
         self._rebin_transition = MantidRebinTransition(self._filter_transition)
         self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
         self._gather_histogram_transition.accumulate_data = True
-
-    def show_tree(self):
-	self.tree(self._create_workspace_from_events_transition, ' ')
-
-    def tree(self, transition, padding):
-	print padding[:-1] + '+-' + transition.get_name()
-	padding = padding + ' '
-	transitions = []
-	transitions = transition._transitions
-	count = 0
-	for a in transitions:
-	    count +=1
-	    print padding + '|'
-	    self.tree(a, padding+"|")
-
+	self.treeString = ""
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -94,7 +80,24 @@ class BackendMantidReducer(BackendWorker):
         return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
 
     def get_parameter_dict(self):
-        return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool'}
+        return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
+
+    def tree(self, transition, padding):
+        self.treeString += "\n" +  padding[:-1] + '+-' + transition.get_name()
+        padding = padding + ' '
+        transitions = []
+        transitions = transition._transitions
+        for a in transitions:
+            self.treeString += "\n" + padding + '|'
+            self.tree(a, padding+"|")
+
+    @property
+    def transition_tree(self):
+	self.treeString = ""
+	self.tree(self._create_workspace_from_events_transition, '')
+	return self.treeString
+	
+
 
     @property
     def bin_parameters(self):

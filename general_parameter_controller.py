@@ -1,3 +1,4 @@
+import json
 
 class GeneralParameterController(object):
     def __init__(self, control_client):
@@ -35,12 +36,12 @@ class GeneralParameterController(object):
 
         self._print_parameter_dict(self._parameter_type_cache)
         print
-
+    
     def _print_parameter_dict(self, parameter_dict):
         for controllee in parameter_dict.keys():
             print 'Controllee:', controllee
-            for parameter, type in parameter_dict[controllee].iteritems():
-                print '{}: {}'.format(parameter, repr(type))
+	    for parameter, type in parameter_dict[controllee].iteritems():
+                print(json.loads(json.dumps( '{}: {}'.format(parameter, type))))
 
     def _convert_to_cached_type(self, controllee, parameter, value):
         return self._parameter_type_cache[controllee][parameter](value)
@@ -59,4 +60,3 @@ class GeneralParameterController(object):
 
     def _get_values(self, parameters):
         return self._control_client.send('get_values', parameters)['payload']
-
