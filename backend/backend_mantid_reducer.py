@@ -82,6 +82,23 @@ class BackendMantidReducer(BackendWorker):
     def get_parameter_dict(self):
         return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
 
+    def add_transition(self, new_transition):
+	parent_transition = self.find_parent_transition(new_transition, self._create_workspace_from_events_transition)
+	#parent_transition = self._create_workspace_from_events_transition
+	self._reduction_transition2=ReductionTransition(parent_transition, self._reducer)
+	return self._reduction_transition2.get_name()
+
+    def find_parent_transition(self, new_transition, transition):
+	if transition.get_name().split()[1] == new_transition:
+	    return transition
+	for a in transition._transitions:
+	    print a.get_name().split()[1]
+	    print new_transition
+	    if a.get_name().split()[1] == new_transition:
+		print a
+		return a
+	    self.find_parent_transition(new_transition, a)
+
     def tree(self, transition, padding):
         self.treeString += "\n" +  padding[:-1] + '+-' + transition.get_name()
         padding = padding + ' '
@@ -97,7 +114,11 @@ class BackendMantidReducer(BackendWorker):
 	self.tree(self._create_workspace_from_events_transition, '')
 	return self.treeString
 	
-
+    @transition_tree.setter
+    def transition_tree(self, new_transition):
+	#currently expect number of parent transition
+	#take this number, find out the parent and use it to make new transition
+	print self.add_transition(new_transition) + " is added."
 
     @property
     def bin_parameters(self):
