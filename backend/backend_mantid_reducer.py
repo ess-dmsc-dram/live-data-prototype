@@ -23,16 +23,15 @@ class BackendMantidReducer(BackendWorker):
         self._reducer = BasicPowderDiffraction()
         self._filter_pulses = False
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
-	self._reduction_transition1=ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
         self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
         self._reduction_transition.accumulate_data = True
-	self._filter_transition1=MantidFilterTransition(self._reduction_transition1)
         self._filter_transition = MantidFilterTransition(self._reduction_transition)
         self._filter_transition.accumulate_data = True
         self._rebin_transition = MantidRebinTransition(self._filter_transition)
-        self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
+       	self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
         self._gather_histogram_transition.accumulate_data = True
-	self.treeString = ""
+	self.tree_string = ""
+	self.transition_dict = {'Reduction': 'ReductionTransition,self._reducer', 'MantidFilter': 'MantidFilterTransition', 'MantidRebin':'MantidRebinTransition', 'GatherHistogram':'GatherHistogramTransition'}
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -83,36 +82,43 @@ class BackendMantidReducer(BackendWorker):
         return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
 
     def add_transition(self, new_transition):
-	parent_transition = self.find_parent_transition(new_transition, self._create_workspace_from_events_transition)
-	#parent_transition = self._create_workspace_from_events_transition
-	self._reduction_transition2=ReductionTransition(parent_transition, self._reducer)
-	return self._reduction_transition2.get_name()
-
-    def find_parent_transition(self, new_transition, transition):
-	if transition.get_name().split()[1] == new_transition:
-	    return transition
-	for a in transition._transitions:
-	    print a.get_name().split()[1]
-	    print new_transition
-	    if a.get_name().split()[1] == new_transition:
-		print a
-		return a
-	    self.find_parent_transition(new_transition, a)
+	self.parentID = ""
+	parentID = new_transition.split(',')[0] 
+	transition_type = new_transition.split(',')[1] #add in catch error stuff here
+	if self._create_workspace_from_events_transition.get_name().split()[1] != parentID:
+	    self.find_parent_transition(parentID, self._create_workspace_from_events_transition)
+	    parent_transition = self.parentID
+	else: parent_transition = self._create_workspace_from_events_transition
+	transition_commands = self.transition_dict[transition_type]
+	transition_commands_list = transition_commands.split(',')
+	potential_reducer = ""
+	if len(transition_commands_list) == 2:
+	    potential_reducer =","+ transition_commands_list[1]
+	transitionCommand =  transition_commands_list[0]+"(parent_transition"+ potential_reducer + ")"
+	eval(transitionCommand)
+	return "THIS IS THE COMMAND RUN: " + transitionCommand
+   
+    def find_parent_transition(self, parentID, transition):
+	for transition in transition._transitions:
+	   if transition.get_name().split()[1] != parentID:
+		self.find_parent_transition(parentID, transition)
+	   else:
+		self.parentID = transition
 
     def tree(self, transition, padding):
-        self.treeString += "\n" +  padding[:-1] + '+-' + transition.get_name()
+        self.tree_string += "\n" +  padding[:-1] + '+-' + transition.get_name()
         padding = padding + ' '
         transitions = []
         transitions = transition._transitions
         for a in transitions:
-            self.treeString += "\n" + padding + '|'
+            self.tree_string += "\n" + padding + '|'
             self.tree(a, padding+"|")
 
     @property
     def transition_tree(self):
-	self.treeString = ""
+	self.tree_string = ""
 	self.tree(self._create_workspace_from_events_transition, '')
-	return self.treeString
+	return self.tree_string
 	
     @transition_tree.setter
     def transition_tree(self, new_transition):
