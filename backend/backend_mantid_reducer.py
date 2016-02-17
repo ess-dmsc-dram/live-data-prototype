@@ -23,18 +23,9 @@ class BackendMantidReducer(BackendWorker):
         self._reducer = BasicPowderDiffraction()
         self._filter_pulses = False
         self._create_workspace_from_events_transition = CreateMantidWorkspaceFromEventsTransition()
-        self._reduction_transition = ReductionTransition(self._create_workspace_from_events_transition, self._reducer)
-        self._reduction_transition.accumulate_data = True
-        self._filter_transition = MantidFilterTransition(self._reduction_transition)
-        self._filter_transition.accumulate_data = True
-        self._rebin_transition = MantidRebinTransition(self._filter_transition)
-	self._rebin_transition333 = MantidRebinTransition(self._filter_transition)
-       	self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
-        self._gather_histogram_transition.accumulate_data = True
 	self.tree_string = ""
 	self.transition_generator_dict = {'Reduction': ['ReductionTransition','self._reducer'], 'MantidFilter': ['MantidFilterTransition'], 'MantidRebin':['MantidRebinTransition'], 'GatherHistogram':['GatherHistogramTransition']}
-	self.post_transition_dict = {'Reduction':['.accumulate_data'], 'MantidFilter':['.accumulate_data', '.set_interval_parameters'], 'MantidRebin':['.set_bin_parameters'], 'GatherHistogram':['.accumulate_data']}	
-	self.transition_objects_dict = {'Reduction':[], 'MantidFilter':[], 'MantidRebin':[self._rebin_transition, self._rebin_transition333], 'GatherHistogram':[]}
+	self.transition_objects_dict = {'Reduction':[], 'MantidFilter':[], 'MantidRebin':[], 'GatherHistogram':[]}
 
 
     def _process_command(self, command):
@@ -77,10 +68,12 @@ class BackendMantidReducer(BackendWorker):
         return True
 
     def get_bin_boundaries(self):
-        return self._rebin_transition.get_checkpoint()[-1].data.readX(0)
+        #return self._rebin_transition.get_checkpoint()[-1].data.readX(0)
+	return 0
 
     def get_bin_values(self):
-        return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
+        #return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
+	return 0
 
     def get_parameter_dict(self):
         return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
@@ -119,19 +112,23 @@ class BackendMantidReducer(BackendWorker):
         for a in transitions:
             self.tree_string += "\n" + padding + '|'
             self.tree(a, padding+"|")
+	
+    def post_transition_settings(self, new_transition_object, transition_type):
+	if transition_type != "MantidRebin":
+	    new_transition_object.accumulate_data = True
 
     @property
     def transition_tree(self):
 	self.tree_string = ""
 	self.tree(self._create_workspace_from_events_transition, '')
-	self.tree_string += "\n REMEMBER '-' seperates! \n To add new transition '[parentID]-[transitionType]. \n to update params '[parentID]-[newParams]\n"
+	self.tree_string += "\n \n REMEMBER '-' separates! \n To add new transition '[parentID]-[transitionType]. \n To update parameters '[transitionID]-[newParams]"
 	return self.tree_string
 	
     @transition_tree.setter
     def transition_tree(self, new_transition):
 	self._lock.acquire()
 	new_transition_object, transition_type = self.add_transition(new_transition)
-	post_transition_settings = self.post_transition_dict[transition_type]	
+	self.post_transition_settings(new_transition_object, transition_type)	
 	self.transition_objects_dict[transition_type].append(new_transition_object)
 	self._lock.release()
 
@@ -139,14 +136,13 @@ class BackendMantidReducer(BackendWorker):
     def bin_parameters(self):
 	bin_parameters_string = ""
 	for transition in self.transition_objects_dict['MantidRebin']:
-	    bin_parameters_string += "\n" + transition.get_name() +": " + transition._bin_parameters
-	
+	    bin_parameters_string += "\n" + transition.get_name() +"-" + transition._bin_parameters
 	return bin_parameters_string
 
     @bin_parameters.setter
     def bin_parameters(self, parameters):
         self._lock.acquire()
-	transition_ID = parameters.split('-')[0]
+	transition_ID = parameters.split('-')[0] #make sure to strip spaces from this?
 	actual_parameters = parameters.split('-')[1]
 	self.find_transition(transition_ID)
         self.target_transition.set_bin_parameters(actual_parameters)
@@ -163,10 +159,17 @@ class BackendMantidReducer(BackendWorker):
 
     @property
     def filter_interval_parameters(self):
-        return 'min,step,max'
+	filter_interval_string = ""
+       # for transition in self.transition_objects_dict['MantidRebin']:
+       #     filter_interval_string += "\n" + transition.get_name() +"-" + transition._interval_parameters
+        filter_interval_string = "NOT IMPLEMENTED YET" #TODO
+	return filter_interval_string
 
     @filter_interval_parameters.setter
     def filter_interval_parameters(self, parameters):
         self._lock.acquire()
-        self._filter_transition.set_interval_parameters(parameters)
+	transition_ID = parameters.split('-')[0]
+	actual_parameters = parameters.split('-')[1]
+	self.find_transition(transition_ID)
+	self.target_transition.set_interval_parameters(actual_parameters)
         self._lock.release()
