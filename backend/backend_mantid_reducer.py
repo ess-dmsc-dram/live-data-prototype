@@ -28,10 +28,14 @@ class BackendMantidReducer(BackendWorker):
         self._filter_transition = MantidFilterTransition(self._reduction_transition)
         self._filter_transition.accumulate_data = True
         self._rebin_transition = MantidRebinTransition(self._filter_transition)
+	self._rebin_transition333 = MantidRebinTransition(self._filter_transition)
        	self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
         self._gather_histogram_transition.accumulate_data = True
 	self.tree_string = ""
-	self.transition_dict = {'Reduction': 'ReductionTransition,self._reducer', 'MantidFilter': 'MantidFilterTransition', 'MantidRebin':'MantidRebinTransition', 'GatherHistogram':'GatherHistogramTransition'}
+	self.transition_generator_dict = {'Reduction': ['ReductionTransition','self._reducer'], 'MantidFilter': ['MantidFilterTransition'], 'MantidRebin':['MantidRebinTransition'], 'GatherHistogram':['GatherHistogramTransition']}
+	self.post_transition_dict = {'Reduction':['.accumulate_data'], 'MantidFilter':['.accumulate_data', '.set_interval_parameters'], 'MantidRebin':['.set_bin_parameters'], 'GatherHistogram':['.accumulate_data']}	
+	self.transition_objects_dict = {'Reduction':[], 'MantidFilter':[], 'MantidRebin':[self._rebin_transition, self._rebin_transition333], 'GatherHistogram':[]}
+
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -82,28 +86,30 @@ class BackendMantidReducer(BackendWorker):
         return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
 
     def add_transition(self, new_transition):
-	self.parentID = ""
-	parentID = new_transition.split(',')[0] 
-	transition_type = new_transition.split(',')[1] #add in catch error stuff here
-	if self._create_workspace_from_events_transition.get_name().split()[1] != parentID:
-	    self.find_parent_transition(parentID, self._create_workspace_from_events_transition)
-	    parent_transition = self.parentID
-	else: parent_transition = self._create_workspace_from_events_transition
-	transition_commands = self.transition_dict[transition_type]
-	transition_commands_list = transition_commands.split(',')
+	self.target_transition = ""
+	parentID = new_transition.split('-')[0] 
+	transition_type = new_transition.split('-')[1] #add in catch error stuff here
+	transition_commands_list = self.transition_generator_dict[transition_type] #try catch here?
 	potential_reducer = ""
 	if len(transition_commands_list) == 2:
 	    potential_reducer =","+ transition_commands_list[1]
-	transitionCommand =  transition_commands_list[0]+"(parent_transition"+ potential_reducer + ")"
-	eval(transitionCommand)
-	return "THIS IS THE COMMAND RUN: " + transitionCommand
+	self.find_transition(parentID)
+	transitionCommand =  transition_commands_list[0]+"(self.target_transition"+ potential_reducer + ")"
+	new_transition_object = eval(transitionCommand)
+	print "THIS IS THE COMMAND RUN: " + transitionCommand
+	return new_transition_object, transition_type
    
-    def find_parent_transition(self, parentID, transition):
-	for transition in transition._transitions:
-	   if transition.get_name().split()[1] != parentID:
-		self.find_parent_transition(parentID, transition)
+    def find_transition(self, transition_ID):
+	if self._create_workspace_from_events_transition.get_name().split()[1] != transition_ID:
+            self.recurse_transition(transition_ID, self._create_workspace_from_events_transition)
+        else: self.target_transition = self._create_workspace_from_events_transition
+
+    def recurse_transition(self, transition_ID, initial_transition):
+	for transition in initial_transition._transitions:
+	   if transition.get_name().split()[1] != transition_ID:
+		self.recurse_transition(transition_ID, transition)
 	   else:
-		self.parentID = transition
+		self.target_transition = transition
 
     def tree(self, transition, padding):
         self.tree_string += "\n" +  padding[:-1] + '+-' + transition.get_name()
@@ -118,22 +124,32 @@ class BackendMantidReducer(BackendWorker):
     def transition_tree(self):
 	self.tree_string = ""
 	self.tree(self._create_workspace_from_events_transition, '')
+	self.tree_string += "\n REMEMBER '-' seperates! \n To add new transition '[parentID]-[transitionType]. \n to update params '[parentID]-[newParams]\n"
 	return self.tree_string
 	
     @transition_tree.setter
     def transition_tree(self, new_transition):
-	#currently expect number of parent transition
-	#take this number, find out the parent and use it to make new transition
-	print self.add_transition(new_transition) + " is added."
+	self._lock.acquire()
+	new_transition_object, transition_type = self.add_transition(new_transition)
+	post_transition_settings = self.post_transition_dict[transition_type]	
+	self.transition_objects_dict[transition_type].append(new_transition_object)
+	self._lock.release()
 
     @property
     def bin_parameters(self):
-        return self._rebin_transition._bin_parameters
+	bin_parameters_string = ""
+	for transition in self.transition_objects_dict['MantidRebin']:
+	    bin_parameters_string += "\n" + transition.get_name() +": " + transition._bin_parameters
+	
+	return bin_parameters_string
 
     @bin_parameters.setter
     def bin_parameters(self, parameters):
         self._lock.acquire()
-        self._rebin_transition.set_bin_parameters(parameters)
+	transition_ID = parameters.split('-')[0]
+	actual_parameters = parameters.split('-')[1]
+	self.find_transition(transition_ID)
+        self.target_transition.set_bin_parameters(actual_parameters)
         self._lock.release()
 
     @property
