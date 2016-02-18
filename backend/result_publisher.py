@@ -18,17 +18,18 @@ class ResultPublisher(Controllable):
     def run(self):
         log.info("Starting ResultPublisher")
         self.connect()
-
-        self._publish_clear()
+	self._publish_clear()
         while True:
-            count = len(self.eventListener._gather_histogram_transition.get_checkpoint())
-            if count != self._last_count:
-                self._publish_clear()
-                self._last_count = count
-            for i in range(count):
-                if self.eventListener._gather_histogram_transition.get_checkpoint()[i]:
-                    self._publish(i)
-            time.sleep(self.update_rate)
+	    if len(self.eventListener.transition_objects_dict['GatherHistogram']) >=1:
+                for gather_histogram_transition in self.eventListener.transition_objects_dict['GatherHistogram']:
+		    count = len(gather_histogram_transition.get_checkpoint())
+            	    if count != self._last_count:
+                    	self._publish_clear()
+                	self._last_count = count
+            	    for i in range(count):
+                	if gather_histogram_transition.get_checkpoint()[i]:
+                    	    self._publish(i, gather_histogram_transition)
+            	    time.sleep(self.update_rate)
 
     def connect(self):
         context = zmq.Context()
@@ -44,8 +45,8 @@ class ResultPublisher(Controllable):
         header = self._create_header('clear', None)
         self.socket.send_json(header)
 
-    def _publish(self, index):
-        boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[index].data
+    def _publish(self, index, gather_histogram_transition):
+        boundaries, values = gather_histogram_transition.get_checkpoint()[index].data
         packet = numpy.concatenate((boundaries, values))
         header = self._create_header('data', index)
         self.socket.send_json(header, flags=zmq.SNDMORE)
