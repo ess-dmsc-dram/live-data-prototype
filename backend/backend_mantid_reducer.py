@@ -89,7 +89,6 @@ class BackendMantidReducer(BackendWorker):
 	self.find_transition(parentID)
 	transitionCommand =  transition_commands_list[0]+"(self.target_transition"+ potential_reducer + ")"
 	new_transition_object = eval(transitionCommand)
-	print "THIS IS THE COMMAND RUN: " + transitionCommand
 	return new_transition_object, transition_type
    
     def find_transition(self, transition_ID):

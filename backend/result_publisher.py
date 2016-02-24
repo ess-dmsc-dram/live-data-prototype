@@ -16,58 +16,59 @@ class ResultPublisher(Controllable):
         self._last_count = 0
 	self._portList = ports.result_stream
 	self._portDict = {}
-	self.default_port = 10003
+	self._socketDict = {} #may meld the two dicts later
+	self.default_port = 10003 #make this just be first in portlist
     
     def run(self):
         log.info("Starting ResultPublisher")
-        self.connect()
-	self._publish_clear()
         while True:
 	    if len(self.eventListener.transition_objects_dict['GatherHistogram']) >=1:
 		for gather_histogram_transition in self.eventListener.transition_objects_dict['GatherHistogram']:
 	     	    if self.default_port not in self._portDict.values():
 			self._portDict[gather_histogram_transition] = self.default_port
+			self.new_connection(self.default_port, gather_histogram_transition)
 		    else: 
 			if self._portDict.get(gather_histogram_transition) == None:
 			    for port in self._portList:
 				if port not in self._portDict.values():
 				    self._portDict[gather_histogram_transition] = port
-				    self.connect(port)
-				    self._publish_clear()
+				    log.info( "Adding " + gather_histogram_transition.get_name() + " to port " + str(port))
+				    self.new_connection(port, gather_histogram_transition)
 				    break
-		 #TODO make it add extra ports if histograms go wild. also remember how people will delete transitions so want ports disconnected
-		# i guess write func to see if transitionobjects dict matches up to portDict? and just delete stuff wildly if it doesnt 
+		 #TODO make it add extra ports if histograms. add in delete function
 		    count = len(gather_histogram_transition.get_checkpoint())
             	    if count != self._last_count:
-                    	self._publish_clear()
+                    	self._publish_clear(gather_histogram_transition)
                 	self._last_count = count
             	    for i in range(count):
                 	if gather_histogram_transition.get_checkpoint()[i]:
                     	    self._publish(i, gather_histogram_transition)
             	    time.sleep(self.update_rate)
+	    #add in comparison function of transitionobjectsdict and port/socket dict, remove transition objects when theyre gone in tod
 
-
-    def connect(self, port = 10003): 
-        context = zmq.Context()
-        self.socket = context.socket(zmq.PUB)
-	uri = 'tcp://*:{0:d}'.format(ports.result_stream)
-	#uri = 'tcp://*:10003'
-        self.socket.bind(uri)
-        log.info('Bound to ' + uri)
+    def new_connection(self, port, gather_histogram_transition):
+	context = zmq.Context()
+	self.socket = context.socket(zmq.PUB) #add this into the dict?
+	uri = 'tcp://*:{0:d}'.format(port)
+	self.socket.bind(uri)
+	self._socketDict[gather_histogram_transition] = self.socket
+	log.info('Bound to ' + uri + ", for: " + gather_histogram_transition.get_name())
 
     def _create_header(self, command, index):
         return { 'command':command, 'index':index }
 
-    def _publish_clear(self):
+    def _publish_clear(self, gather_histogram_transition):
         header = self._create_header('clear', None)
-        self.socket.send_json(header)
+	socket = self._socketDict[gather_histogram_transition]
+        socket.send_json(header)
 
     def _publish(self, index, gather_histogram_transition):
+	socket = self._socketDict[gather_histogram_transition]
         boundaries, values = gather_histogram_transition.get_checkpoint()[index].data
         packet = numpy.concatenate((boundaries, values))
         header = self._create_header('data', index)
-        self.socket.send_json(header, flags=zmq.SNDMORE)
-        self.socket.send(packet)
+        socket.send_json(header, flags=zmq.SNDMORE)
+        socket.send(packet)
 
     def get_parameter_dict(self):
         return {'update_rate':'float'}
