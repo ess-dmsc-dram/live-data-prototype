@@ -67,14 +67,6 @@ class BackendMantidReducer(BackendWorker):
         self._lock.release()
         return True
 
-    def get_bin_boundaries(self):
-        #return self._rebin_transition.get_checkpoint()[-1].data.readX(0)
-	return 0
-
-    def get_bin_values(self):
-        #return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
-	return 0
-
     def get_parameter_dict(self):
         return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'transition_tree':'string' }
 
@@ -115,21 +107,55 @@ class BackendMantidReducer(BackendWorker):
     def post_transition_settings(self, new_transition_object, transition_type):
 	if transition_type != "MantidRebin":
 	    new_transition_object.accumulate_data = True
+   
+    def _delete_from_dict(self, transition):
+	new_dict= {}
+	for key, value in self.transition_objects_dict.items():
+	    object_list=[]
+	    for transition_object in value:
+		if transition_object != transition:
+		    object_list.append(transition_object)
+	    new_dict[key] = object_list	
+	self.transition_objects_dict = new_dict
+
+
+    def _delete_transition_object(self, transition):
+	for transitions in transition._transitions:
+	    self._delete_transition_object(transitions)
+	    self._delete_from_dict(transitions)
+	    print "deleting: " + str(transitions)
+	    del transitions
+		
+    def _delete_transition(self, transition_id):
+	self.find_transition(transition_id)
+	print "this is before dict"
+	for values in self.transition_objects_dict.values():
+	    print values
+	for transitions in self.target_transition._transitions:
+	    self._delete_from_dict(transitions)
+	self.target_transition._transitions = []
+	print "this is after dict"
+        for values in self.transition_objects_dict.values():
+            print values
 
     @property
     def transition_tree(self):
 	self.tree_string = ""
 	self.tree(self._create_workspace_from_events_transition, '')
-	self.tree_string += "\n \n REMEMBER '-' separates! \n To add new transition '[parentID]-[transitionType]. \n To update parameters '[transitionID]-[newParams]"
+	self.tree_string += "\n \n REMEMBER '-' separates \n To add new transition '[parentID]-[transitionType]' \n To delete '[transitionID]-DEL' (This will delete all children) \n To update parameters '[transitionID]-[newParams]'"
 	return self.tree_string
 	
     @transition_tree.setter
     def transition_tree(self, new_transition):
 	self._lock.acquire()
-	new_transition_object, transition_type = self.add_transition(new_transition)
-	self.post_transition_settings(new_transition_object, transition_type)	
-	self.transition_objects_dict[transition_type].append(new_transition_object)
-	self._lock.release()
+	if new_transition.split('-')[1] == 'DEL':
+	    self._delete_transition(new_transition.split('-')[0])
+	else:
+	    new_transition_object, transition_type = self.add_transition(new_transition)
+	    self.post_transition_settings(new_transition_object, transition_type)	
+	    self.transition_objects_dict[transition_type].append(new_transition_object)
+
+	self._lock.release() #TODO add in automated 'if nothing entered, just set up what is expected' thing
 
     @property
     def bin_parameters(self):
