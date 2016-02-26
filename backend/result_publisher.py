@@ -45,6 +45,22 @@ class ResultPublisher(Controllable):
                     	    self._publish(i, gather_histogram_transition)
             	    time.sleep(self.update_rate)
 	    #add in comparison function of transitionobjectsdict and port/socket dict, remove transition objects when theyre gone in tod
+	    self.compare_dicts_update_ports()
+
+    def compare_dicts_update_ports(self):
+	#potentially reduce amount of times this is run ie only if len of gatherhistogram dict changes?
+	new_port_dic = {}
+	for transitions in self.eventListener.transition_objects_dict['GatherHistogram']:
+	    if transitions in self._portDict.keys():
+		new_port_dic[transitions] = self._portDict[transitions]
+	self._portDict = new_port_dic
+
+	new_socket_dic = {}
+	for sockets in self._socketDict.keys():
+	    if sockets in self._portDict.keys():
+		new_socket_dic[sockets] = self._socketDict[sockets]	
+	self._socketDict = new_socket_dic	
+
 
     def new_connection(self, port, gather_histogram_transition):
 	context = zmq.Context()

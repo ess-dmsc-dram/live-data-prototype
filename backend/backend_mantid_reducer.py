@@ -128,15 +128,9 @@ class BackendMantidReducer(BackendWorker):
 		
     def _delete_transition(self, transition_id):
 	self.find_transition(transition_id)
-	print "this is before dict"
-	for values in self.transition_objects_dict.values():
-	    print values
 	for transitions in self.target_transition._transitions:
 	    self._delete_from_dict(transitions)
 	self.target_transition._transitions = []
-	print "this is after dict"
-        for values in self.transition_objects_dict.values():
-            print values
 
     @property
     def transition_tree(self):
