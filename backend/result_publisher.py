@@ -16,8 +16,9 @@ class ResultPublisher(Controllable):
         self._last_count = 0
 	self._portList = ports.result_stream
 	self._portDict = {}
-	self._socketDict = {} #may meld the two dicts later
-	self.default_port = 10003 #make this just be first in portlist
+	self._socketDict = {} 
+	self.default_port = self._portList[0]
+	self.histogramNum = 0
     
     def run(self):
         log.info("Starting ResultPublisher")
@@ -35,7 +36,6 @@ class ResultPublisher(Controllable):
 				    log.info( "Adding " + gather_histogram_transition.get_name() + " to port " + str(port))
 				    self.new_connection(port, gather_histogram_transition)
 				    break
-		 #TODO make it add extra ports if histograms. add in delete function
 		    count = len(gather_histogram_transition.get_checkpoint())
             	    if count != self._last_count:
                     	self._publish_clear(gather_histogram_transition)
@@ -44,11 +44,11 @@ class ResultPublisher(Controllable):
                 	if gather_histogram_transition.get_checkpoint()[i]:
                     	    self._publish(i, gather_histogram_transition)
             	    time.sleep(self.update_rate)
-	    #add in comparison function of transitionobjectsdict and port/socket dict, remove transition objects when theyre gone in tod
-	    self.compare_dicts_update_ports()
+	   if histogramNum != len(self.eventListener.transition_objects_dict['GatherHistogram']):
+	   	self.compare_dicts_update_ports()
+		histogramNum = len(self.eventListener.transition_objects_dict['GatherHistogram'])
 
     def compare_dicts_update_ports(self):
-	#potentially reduce amount of times this is run ie only if len of gatherhistogram dict changes?
 	new_port_dic = {}
 	for transitions in self.eventListener.transition_objects_dict['GatherHistogram']:
 	    if transitions in self._portDict.keys():
@@ -64,7 +64,7 @@ class ResultPublisher(Controllable):
 
     def new_connection(self, port, gather_histogram_transition):
 	context = zmq.Context()
-	self.socket = context.socket(zmq.PUB) #add this into the dict?
+	self.socket = context.socket(zmq.PUB)
 	uri = 'tcp://*:{0:d}'.format(port)
 	self.socket.bind(uri)
 	self._socketDict[gather_histogram_transition] = self.socket
