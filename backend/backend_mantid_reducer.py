@@ -126,10 +126,22 @@ class BackendMantidReducer(BackendWorker):
 	    print "deleting: " + str(transitions)
 	    del transitions
 		
+    def _remove_from_parents_transitions_list(self):
+	parent_transition = self.target_transition._parents[0] #only 1 parent
+	print parent_transition
+	updated_transitions = []
+	for transition in parent_transition()._transitions:
+	    if transition != self.target_transition:
+		updated_transitions.append(transition)
+	parent_transition()._transitions = updated_transitions	
+
+
     def _delete_transition(self, transition_id):
 	self.find_transition(transition_id)
 	for transitions in self.target_transition._transitions:
 	    self._delete_from_dict(transitions)
+	self._delete_from_dict(self.target_transition)
+	self._remove_from_parents_transitions_list()
 	self.target_transition._transitions = []
 
     @property
