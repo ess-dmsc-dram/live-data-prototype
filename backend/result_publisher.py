@@ -17,7 +17,6 @@ class ResultPublisher(Controllable):
 	self._portList = ports.result_stream
 	self._portDict = {}
 	self._socketDict = {} 
-	self.default_port = self._portList[0]
 	self.histogramNum = 0
     
     def run(self):
@@ -25,17 +24,13 @@ class ResultPublisher(Controllable):
         while True:
 	    if len(self.eventListener.transition_objects_dict['GatherHistogram']) >=1:
 		for gather_histogram_transition in self.eventListener.transition_objects_dict['GatherHistogram']:
-	     	    if self.default_port not in self._portDict.values():
-			self._portDict[gather_histogram_transition] = self.default_port
-			self.new_connection(self.default_port, gather_histogram_transition)
-		    else: 
-			if self._portDict.get(gather_histogram_transition) == None:
-			    for port in self._portList:
-				if port not in self._portDict.values():
-				    self._portDict[gather_histogram_transition] = port
-				    log.info( "Adding " + gather_histogram_transition.get_name() + " to port " + str(port))
-				    self.new_connection(port, gather_histogram_transition)
-				    break
+		    if self._portDict.get(gather_histogram_transition) == None:
+			for port in self._portList:
+		  	    if port not in self._portDict.values():
+				self._portDict[gather_histogram_transition] = port
+				log.info( "Adding " + gather_histogram_transition.get_name() + " to port " + str(port))
+				self.new_connection(port, gather_histogram_transition)
+				break
 		    count = len(gather_histogram_transition.get_checkpoint())
             	    if count != self._last_count:
                     	self._publish_clear(gather_histogram_transition)
