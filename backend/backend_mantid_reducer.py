@@ -194,7 +194,7 @@ class BackendMantidReducer(BackendWorker):
        # for transition in self.transition_objects_dict['MantidRebin']:
        #     filter_interval_string += "\n" + transition.get_name() +"-" + transition._interval_parameters
         filter_interval_string = "NOT IMPLEMENTED YET" #TODO
-	return filter_interval_string
+	return 'min,step,max'
 
     @filter_interval_parameters.setter
     def filter_interval_parameters(self, parameters):
