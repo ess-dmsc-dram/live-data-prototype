@@ -1,41 +1,57 @@
 from collections import deque
 import zmq
-
-import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore
+import sys
 import numpy
+import PyQt4
+import mantid.simpleapi as simpleapi
+import mantidqtpython as mpy
 
 from logger import log
+ConfigService = simpleapi.ConfigService
+#InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
+#app = PyQt4.QtGui.QApplication(sys.argv)
 
 
-class Plotter(object):
+class InstrumentView(object):
     def __init__(self, dataListener):
         self.dataListener = dataListener
-        self.win = pg.GraphicsWindow()
-        self.win.resize(800,350)
-        self.win.setWindowTitle('pyqtgraph example: Histogram')
-        self.plt1 = self.win.addPlot()
-        self.curves = {}
+	print "reaches iv clas"
+	ws = simpleapi.CreateSimulationWorkspace(Instrument='data/POWDIFF_Definition.xml', BinParams='1,0.5,2')
+	self._number_of_spectra = ws.getNumberHistograms()
+	ws = simpleapi.WorkspaceFactory.Instance().create("EventWorkspace", self._number_of_spectra, 1, 1)
+	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+        ws =  simpleapi.AnalysisDataService['POWDIFF_test']
+        simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
+        ws.getAxis(0).setUnit('tof')
+	print "after getAxis"
+	
+	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
+        self.iw = InstrumentWidget("POWDIFF_test")
+        self.iw.show()
+	#app.exec_()
 
     def clear(self):
         self.curves = {}
-        self.plt1.clear()
 
-    def update(self):
+    def updateInstrumentView(self):
+	print "reaches update"
         while self.dataListener.data:
-            index,x,y = self.dataListener.data.popleft()
-            if not index in self.curves:
-                self.curves[index] = self.plt1.plot(stepMode=True, pen=(index), name=str(index))
-            self.curves[index].setData(x, y)
-        self.plt1.enableAutoRange('xy', False)
+            index, x, y = self.dataListener.data.popleft()
+	    
+           # ws = WorkspaceFactory.Instance().create("EventWorkspace", self._number_of_spectra, 1, 1);
+           # AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+           # ws =  AnalysisDataService['POWDIFF_test']
+           # simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
+           # ws.getAxis(0).setUnit('tof')
+           # iw = InstrumentWidget("ws")
+           # iw.show()
 
-
-class DataListener(QtCore.QObject):
-    clear = QtCore.pyqtSignal()
-    new_data = QtCore.pyqtSignal()
+class DataListener(PyQt4.QtCore.QObject):
+    clear = PyQt4.QtCore.pyqtSignal()
+    new_data = PyQt4.QtCore.pyqtSignal()
 
     def __init__(self, host, port):
-        QtCore.QObject.__init__(self)
+        PyQt4.QtCore.QObject.__init__(self)
         self.data = deque()
         self._host = host
         self._port = port

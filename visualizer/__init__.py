@@ -1,2 +1,2 @@
-from visualizer import Plotter
+from visualizer import InstrumentView
 from visualizer import DataListener
