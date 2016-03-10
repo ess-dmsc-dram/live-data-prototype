@@ -58,7 +58,7 @@ class DataListener(QtCore.QObject):
         uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
-        log.info('Substribed to result publisher at ' + uri)
+        log.info('Subscribed to result publisher at ' + uri)
 
     def get_histogram(self):
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)
