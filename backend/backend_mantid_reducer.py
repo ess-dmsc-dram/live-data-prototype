@@ -30,6 +30,8 @@ class BackendMantidReducer(BackendWorker):
         self._rebin_transition = MantidRebinTransition(self._filter_transition)
         self._gather_histogram_transition = GatherHistogramTransition(self._rebin_transition)
         self._gather_histogram_transition.accumulate_data = True
+	self._rebin_for_instrumentview_transition = MantidRebinTransition(self._filter_transition)  
+	self._rebin_for_instrumentview_transition.set_bin_parameters('0,1,1') #set to single bin
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])

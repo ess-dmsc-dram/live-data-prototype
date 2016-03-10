@@ -1,5 +1,6 @@
 from backend_event_listener import BackendEventListener
 from backend_mantid_reducer import BackendMantidReducer
 from result_publisher import ResultPublisher
+from instrumentview_publisher import InstrumentViewPublisher
 from zmq_queue import ZMQQueueServer
 from zmq_queue import ZMQQueueClient

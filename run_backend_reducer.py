@@ -1,6 +1,7 @@
 from logger import setup_global_logger
 from backend import BackendMantidReducer
 from backend import ResultPublisher
+from backend import InstrumentViewPublisher
 from backend import ZMQQueueServer
 from backend import ZMQQueueClient
 from parameter_control_server import ParameterControlServer
@@ -36,11 +37,14 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
     reducer_controller_thread.start()
 
-    resultPublisher = ResultPublisher(reducer)
-    resultPublisher_thread = threading.Thread(target=resultPublisher.run)
-    resultPublisher_thread.start()
-
-    parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
+    #resultPublisher = ResultPublisher(reducer)
+    #resultPublisher_thread = threading.Thread(target=resultPublisher.run)
+    #resultPublisher_thread.start()
+    instrumentViewPublisher = InstrumentViewPublisher(reducer)
+    instrumentViewPublisher_thread = threading.Thread(target=instrumentViewPublisher.run)
+    instrumentViewPublisher_thread.start()
+    parameterController = ParameterControlServer(controllees=[instrumentViewPublisher], port=ports.result_publisher_control)
+   #parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()
 
