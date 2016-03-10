@@ -15,7 +15,6 @@ ConfigService = simpleapi.ConfigService
 class InstrumentView(object):
     def __init__(self, dataListener):
         self.dataListener = dataListener
-	print "reaches iv clas"
 	ws = simpleapi.CreateSimulationWorkspace(Instrument='data/POWDIFF_Definition.xml', BinParams='1,0.5,2')
 	self._number_of_spectra = ws.getNumberHistograms()
 	ws = simpleapi.WorkspaceFactory.Instance().create("EventWorkspace", self._number_of_spectra, 1, 1)
@@ -23,28 +22,27 @@ class InstrumentView(object):
         ws =  simpleapi.AnalysisDataService['POWDIFF_test']
         simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
         ws.getAxis(0).setUnit('tof')
-	print "after getAxis"
 	
 	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
         self.iw = InstrumentWidget("POWDIFF_test")
         self.iw.show()
-	#app.exec_()
 
     def clear(self):
         self.curves = {}
+	#TODO
 
     def updateInstrumentView(self):
-	print "reaches update"
+	ws = simpleapi.AnalysisDataService['POWDIFF_test']
+	ws = simpleapi.CreateWorkspace(dataX, dataY)
+	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+	simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
         while self.dataListener.data:
-            index, x, y = self.dataListener.data.popleft()
-	    
-           # ws = WorkspaceFactory.Instance().create("EventWorkspace", self._number_of_spectra, 1, 1);
-           # AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
-           # ws =  AnalysisDataService['POWDIFF_test']
-           # simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
-           # ws.getAxis(0).setUnit('tof')
-           # iw = InstrumentWidget("ws")
-           # iw.show()
+            index, x, y, e = self.dataListener.data.popleft()
+	    #update 'POWDIFF_test' with these 
+	    #ws.setX(index, x)
+	    #ws.setY(index, y)
+	    #ws.setE(index, e)
+
 
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()
@@ -62,8 +60,8 @@ class DataListener(PyQt4.QtCore.QObject):
         while True:
             command, index = self._receive_header()
             if command == 'data':
-                x,y = self.get_histogram()
-                self.data.append((index,x,y))
+                x,y,e = self.get_histogram()
+                self.data.append((index,x,y,e))
                 self.new_data.emit()
             elif command == 'clear':
                 self.clear.emit()
@@ -74,12 +72,12 @@ class DataListener(PyQt4.QtCore.QObject):
         uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
-        log.info('Substribed to result publisher at ' + uri)
+        log.info('Subscribed to result publisher at ' + uri)
 
     def get_histogram(self):
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)
-        x,y = numpy.array_split(data, 2)
-        return x,y
+        x, y, e = numpy.array_split(data, 3)
+        return x, y, e
 
     def _receive_header(self):
         header = self.socket.recv_json()

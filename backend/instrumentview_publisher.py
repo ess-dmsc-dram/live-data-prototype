@@ -51,12 +51,8 @@ class InstrumentViewPublisher(Controllable):
 	currentws = self.eventListener._rebin_for_instrumentview_transition.get_checkpoint()[index].data
 	for i in range(currentws.getNumberHistograms()):
             seriesX = currentws.readX(i)
-	    print seriesX
-
 	    seriesY = currentws.readY(i)
-	    print seriesY
 	    seriesE = currentws.readE(i)
-	    print seriesE
 	    packet = numpy.concatenate((seriesX, seriesY, seriesE))
 	    header = self._create_header('data', index)
             self.socket.send_json(header, flags=zmq.SNDMORE)
