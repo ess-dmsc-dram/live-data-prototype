@@ -38,6 +38,7 @@ python run_visualizer.py -p 10006 #or 10007 or 8 depending on how many gather_hi
 In all four cases the run script supports the option `-h` to print help, and further options, as described in the respective help. In particular, in several cases you can set the log level with `-l` and the host with `-H` (which defaults to localhost).
 
 **Control and the transition tree:**
+
 ...is possible with the script `control.py`.
  it is possible to add transitions to the workflow dynamically.
 Usage example:
@@ -67,7 +68,7 @@ A typical workflow would look something like this:
 
 **Control while running:**
 
-......again using the control.py script. The components described above listen for commands via ZeroMQ on various ports (streamer on 10002, backend-reducer on 10004 and 10005).
+...again using the control.py script. The components described above listen for commands via ZeroMQ on various ports (streamer on 10002, backend-reducer on 10004 and 10005).
 
 Usage example:
 ```sh
