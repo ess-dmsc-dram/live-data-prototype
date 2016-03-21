@@ -8,8 +8,6 @@ import mantidqtpython as mpy
 
 from logger import log
 ConfigService = simpleapi.ConfigService
-#InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
-#app = PyQt4.QtGui.QApplication(sys.argv)
 
 
 class InstrumentView(object):
@@ -17,7 +15,8 @@ class InstrumentView(object):
         self.dataListener = dataListener
 	ws = simpleapi.CreateSimulationWorkspace(Instrument='data/POWDIFF_Definition.xml', BinParams='1,0.5,2')
 	self._number_of_spectra = ws.getNumberHistograms()
-	ws = simpleapi.WorkspaceFactory.Instance().create("EventWorkspace", self._number_of_spectra, 1, 1)
+	print "this is num spectra " + str(self._number_of_spectra)
+	ws = simpleapi.WorkspaceFactory.Instance().create("Workspace2D", self._number_of_spectra, 2, 1)
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws =  simpleapi.AnalysisDataService['POWDIFF_test']
         simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
@@ -33,15 +32,15 @@ class InstrumentView(object):
 
     def updateInstrumentView(self):
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
-	ws = simpleapi.CreateWorkspace(dataX, dataY)
-	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
-	simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
         while self.dataListener.data:
             index, x, y, e = self.dataListener.data.popleft()
 	    #update 'POWDIFF_test' with these 
-	    #ws.setX(index, x)
-	    #ws.setY(index, y)
-	    #ws.setE(index, e)
+	    ws.setX(index, x)
+	    #print "this index: " + str(index) + " and this x: " + str(x)
+	    ws.setY(index, y)
+ 	    #print "this y: " + str(y)
+	    ws.setE(index, e)
+	    #print "this e: " + str(e)
 
 
 class DataListener(PyQt4.QtCore.QObject):
