@@ -40,22 +40,28 @@ class InstrumentViewPublisher(Controllable):
         self.socket.send_json(header)
 
     def _publish(self):
-        #boundaries, values = self.eventListener._rebin_for_instrumentview_transition.get_checkpoint()[index].data
-        #packet = numpy.concatenate((boundaries, values))
 	#should want readX, readY, readE and spectrum num via getNumberofHistograms()
 	currentws = self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data
 	#print currentws.getNumberHistograms()
 	#current workspace is what
-	print type(currentws)
+	#clone workspace here pass copy
 	for i in range(currentws.getNumberHistograms()):
 	    #print i
-            seriesX = currentws.readX(i)
-	    #print seriesX
-	    seriesY = currentws.readY(i)
-	    #print seriesY
-	    seriesE = currentws.readE(i)
-	    #print seriesE
+            #seriesX = currentws.readX(i)
+	    seriesX = numpy.array([0,1])
+	    #seriesX = [0,1]
+	    #seriesY = currentws.readY(i)
+	    seriesY = numpy.array([1])
+	    #seriesY = [1]
+	    #seriesE = currentws.readE(i)
+	    seriesE = numpy.array([1])
+	    #seriesE = [1]
 	    packet = numpy.concatenate((seriesX, seriesY, seriesE))
+	    print "here packet"
+	    print packet
+ 	    print "here split"
+	    x, y, e = numpy.array_split(packet, 3)
+	    print x, y, e
 	    header = self._create_header('data', i) 
             self.socket.send_json(header, flags=zmq.SNDMORE)
             self.socket.send(packet)
