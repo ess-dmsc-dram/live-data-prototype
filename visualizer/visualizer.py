@@ -20,16 +20,8 @@ class InstrumentView(object):
 	simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
 	ws = simpleapi.Rebin(ws, "0,1,2")
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
-	#simpleapi.AnalysisDataService['POWDIFF_test']
-	#simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+        ws.getAxis(0).setUnit('tof')
 	
-        #ws =  simpleapi.AnalysisDataService['POWDIFF_test']
-        #simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
-        #ws.getAxis(0).setUnit('tof')
-	
-	#ws.setX(1,numpy.array([0,1]))
-	#ws.setY(1,numpy.array([1]))
-	#ws.setE(1,numpy.array([1]))
 	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
         self.iw = InstrumentWidget('POWDIFF_test')
         self.iw.show()
@@ -44,8 +36,8 @@ class InstrumentView(object):
 	
         while self.dataListener.data:
             index, x, y, e = self.dataListener.data.popleft()
-	    #ws.dataY(index)[1] = y
-	    ws.dataY(index)[1] = random.randint(1,5)
+	    ws.dataY(index)[1] = y
+	   
 	    	
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()

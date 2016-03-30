@@ -1,7 +1,7 @@
 import time
 import numpy
 import zmq
-
+import mantid.simpleapi as simpleapi
 from logger import log
 import ports
 from controllable import Controllable
@@ -40,28 +40,12 @@ class InstrumentViewPublisher(Controllable):
         self.socket.send_json(header)
 
     def _publish(self):
-	#should want readX, readY, readE and spectrum num via getNumberofHistograms()
-	currentws = self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data
-	#print currentws.getNumberHistograms()
-	#current workspace is what
-	#clone workspace here pass copy
+	currentws = simpleapi.CloneWorkspace(self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data)
 	for i in range(currentws.getNumberHistograms()):
-	    #print i
-            #seriesX = currentws.readX(i)
-	    seriesX = numpy.array([0,1])
-	    #seriesX = [0,1]
-	    #seriesY = currentws.readY(i)
-	    seriesY = numpy.array([1])
-	    #seriesY = [1]
-	    #seriesE = currentws.readE(i)
-	    seriesE = numpy.array([1])
-	    #seriesE = [1]
+            seriesX = currentws.readX(i)
+	    seriesY = currentws.readY(i)
+	    seriesE = currentws.readE(i)
 	    packet = numpy.concatenate((seriesX, seriesY, seriesE))
-	    print "here packet"
-	    print packet
- 	    print "here split"
-	    x, y, e = numpy.array_split(packet, 3)
-	    print x, y, e
 	    header = self._create_header('data', i) 
             self.socket.send_json(header, flags=zmq.SNDMORE)
             self.socket.send(packet)
