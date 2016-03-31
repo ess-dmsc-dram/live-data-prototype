@@ -14,42 +14,72 @@ class ResultPublisher(Controllable):
         self._update_rate = 1.0
         self.socket = None
         self._last_count = 0
-
+	self._portList = ports.result_stream
+	self._portDict = {}
+	self._socketDict = {} 
+	self.histogramNum = 0
+    
     def run(self):
         log.info("Starting ResultPublisher")
-        self.connect()
-
-        self._publish_clear()
         while True:
-            count = len(self.eventListener._gather_histogram_transition.get_checkpoint())
-            if count != self._last_count:
-                self._publish_clear()
-                self._last_count = count
-            for i in range(count):
-                if self.eventListener._gather_histogram_transition.get_checkpoint()[i]:
-                    self._publish(i)
-            time.sleep(self.update_rate)
+	    if len(self.eventListener.transition_objects_dict['GatherHistogram']) >=1:
+		for gather_histogram_transition in self.eventListener.transition_objects_dict['GatherHistogram']:
+		    if self._portDict.get(gather_histogram_transition) == None:
+			for port in self._portList:
+		  	    if port not in self._portDict.values():
+				self._portDict[gather_histogram_transition] = port
+				log.info( "Adding " + gather_histogram_transition.get_name() + " to port " + str(port))
+				self.new_connection(port, gather_histogram_transition)
+				break
+		    count = len(gather_histogram_transition.get_checkpoint())
+            	    if count != self._last_count:
+                    	self._publish_clear(gather_histogram_transition)
+                	self._last_count = count
+            	    for i in range(count):
+                	if gather_histogram_transition.get_checkpoint()[i]:
+                    	    self._publish(i, gather_histogram_transition)
+            	    time.sleep(self.update_rate)
+	    if self.histogramNum != len(self.eventListener.transition_objects_dict['GatherHistogram']):
+	   	self.compare_dicts_update_ports()
+		self.histogramNum = len(self.eventListener.transition_objects_dict['GatherHistogram'])
 
-    def connect(self):
-        context = zmq.Context()
-        self.socket = context.socket(zmq.PUB)
-        uri = 'tcp://*:{0:d}'.format(ports.result_stream)
-        self.socket.bind(uri)
-        log.info('Bound to ' + uri)
+    def compare_dicts_update_ports(self):
+	new_port_dic = {}
+	for transitions in self.eventListener.transition_objects_dict['GatherHistogram']:
+	    if transitions in self._portDict.keys():
+		new_port_dic[transitions] = self._portDict[transitions]
+	self._portDict = new_port_dic
+
+	new_socket_dic = {}
+	for sockets in self._socketDict.keys():
+	    if sockets in self._portDict.keys():
+		new_socket_dic[sockets] = self._socketDict[sockets]	
+	self._socketDict = new_socket_dic	
+
+
+    def new_connection(self, port, gather_histogram_transition):
+	context = zmq.Context()
+	self.socket = context.socket(zmq.PUB)
+	uri = 'tcp://*:{0:d}'.format(port)
+	self.socket.bind(uri)
+	self._socketDict[gather_histogram_transition] = self.socket
+	log.info('Bound to ' + uri + ", for: " + gather_histogram_transition.get_name())
 
     def _create_header(self, command, index):
         return { 'command':command, 'index':index }
 
-    def _publish_clear(self):
+    def _publish_clear(self, gather_histogram_transition):
         header = self._create_header('clear', None)
-        self.socket.send_json(header)
+	socket = self._socketDict[gather_histogram_transition]
+        socket.send_json(header)
 
-    def _publish(self, index):
-        boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[index].data
+    def _publish(self, index, gather_histogram_transition):
+	socket = self._socketDict[gather_histogram_transition]
+        boundaries, values = gather_histogram_transition.get_checkpoint()[index].data
         packet = numpy.concatenate((boundaries, values))
         header = self._create_header('data', index)
-        self.socket.send_json(header, flags=zmq.SNDMORE)
-        self.socket.send(packet)
+        socket.send_json(header, flags=zmq.SNDMORE)
+        socket.send(packet)
 
     def get_parameter_dict(self):
         return {'update_rate':'float'}

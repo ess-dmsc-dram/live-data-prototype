@@ -43,8 +43,6 @@ class BackendHeartbeat(object):
         packet_type, payload_length, payload = self._unpack_header(header)
         if packet_type == 0:
             return 0, None
-        if packet_type == 2:
-            payload = json.loads(payload)
         # Note: mpi4py lower-case deals with things under the hood,
         # probably at the cost of speed, but long command should be rare.
         if payload_length > 48:
@@ -52,7 +50,8 @@ class BackendHeartbeat(object):
             if packet_type == 2:
                 payload = json.loads(payload)
             return packet_type, payload
-        elif payload_length > 0:
+	if packet_type == 2:
+            payload = json.loads(payload)
             return packet_type, payload
         else:
             return packet_type, None

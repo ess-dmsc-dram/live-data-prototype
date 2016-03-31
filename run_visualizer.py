@@ -1,5 +1,4 @@
 from threading import Thread
-
 from pyqtgraph.Qt import QtGui
 
 from logger import setup_global_logger
@@ -8,10 +7,9 @@ import command_line_parser
 from visualizer import DataListener
 from visualizer import Plotter
 
-
 setup_global_logger(level=command_line_parser.get_log_level())
 
-data_listener = DataListener(host=command_line_parser.get_host(), port=ports.result_stream)
+data_listener = DataListener(command_line_parser.args.host, command_line_parser.args.port)
 data_listener_thread = Thread(target=data_listener.run)
 data_listener_thread.daemon = True
 plotter = Plotter(data_listener)

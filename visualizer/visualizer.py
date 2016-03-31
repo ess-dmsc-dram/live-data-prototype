@@ -55,7 +55,7 @@ class DataListener(QtCore.QObject):
     def connect(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
-        uri = 'tcp://{0}:{1:d}'.format(self._host, self._port)
+        uri = 'tcp://{0}:{1:d}'.format(self._host, (int(self._port)))
         self.socket.connect(uri)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
         log.info('Subscribed to result publisher at ' + uri)
