@@ -18,7 +18,7 @@ class InstrumentView(object):
 	ws = simpleapi.WorkspaceFactory.Instance().create("Workspace2D", self._number_of_spectra, 2, 1)
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
 	simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
-	ws = simpleapi.Rebin(ws, "0,1,2")
+	ws = simpleapi.Rebin(ws, "0,0.5,1.5")
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws.getAxis(0).setUnit('tof')
 	
@@ -27,16 +27,18 @@ class InstrumentView(object):
         self.iw.show()
 
     def clear(self):
-        self.curves = {}
-	#TODO
+        ws = simpleapi.AnalysisDataService['POWDIFF_test']
+	
 
     def updateInstrumentView(self):
 	#pass
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
-	
         while self.dataListener.data:
             index, x, y, e = self.dataListener.data.popleft()
-	    ws.dataY(index)[1] = y
+	    ws.dataY(index)[1] = y #is 2
+	    ws.dataE(index)[1] = e
+	    ws.dataX(index)[0] = x[0]
+	    ws.dataX(index)[2] = x[1]
 	   
 	    	
 class DataListener(PyQt4.QtCore.QObject):

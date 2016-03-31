@@ -40,6 +40,7 @@ class InstrumentViewPublisher(Controllable):
         self.socket.send_json(header)
 
     def _publish(self):
+	#TODO send all data for currentws in one go cos latency etc
 	currentws = simpleapi.CloneWorkspace(self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data)
 	for i in range(currentws.getNumberHistograms()):
             seriesX = currentws.readX(i)
