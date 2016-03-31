@@ -1,7 +1,7 @@
 import threading
 import time
 import argparse
-
+import command_line_parser
 from logger import setup_global_logger
 import ports
 from parameter_control_server import ParameterControlServer
@@ -19,7 +19,7 @@ parser.add_argument("-]", "--max-plane-distance", type=float,  default=4.0, help
 
 args = parser.parse_args()
 
-setup_global_logger(level=args.log)
+setup_global_logger(level=command_line_parser.get_log_level())
 
 base_generator = create_BraggEventGenerator(args.instrument_definition, (args.unit_cell, args.space_group, args.atoms), args.min_plane_distance, args.max_plane_distance)
 parameter_controller = ParameterControlServer(port=ports.streamer_control)

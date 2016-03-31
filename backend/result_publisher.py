@@ -39,9 +39,9 @@ class ResultPublisher(Controllable):
                 	if gather_histogram_transition.get_checkpoint()[i]:
                     	    self._publish(i, gather_histogram_transition)
             	    time.sleep(self.update_rate)
-	   if histogramNum != len(self.eventListener.transition_objects_dict['GatherHistogram']):
+	    if self.histogramNum != len(self.eventListener.transition_objects_dict['GatherHistogram']):
 	   	self.compare_dicts_update_ports()
-		histogramNum = len(self.eventListener.transition_objects_dict['GatherHistogram'])
+		self.histogramNum = len(self.eventListener.transition_objects_dict['GatherHistogram'])
 
     def compare_dicts_update_ports(self):
 	new_port_dic = {}

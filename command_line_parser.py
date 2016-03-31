@@ -17,3 +17,6 @@ def get_host():
 
 def get_log_level():
     return args.log
+
+
+get_log_level()
