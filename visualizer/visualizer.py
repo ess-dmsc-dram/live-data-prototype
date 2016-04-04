@@ -32,14 +32,18 @@ class InstrumentView(object):
 
     def updateInstrumentView(self):
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
-	#simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         while self.dataListener.data:
-            index, x, y, e = self.dataListener.data.popleft()
-	    ws.dataY(index)[0] = y[0] #is 2
-	    ws.dataE(index)[0] = e[0]
-	    ws.dataX(index)[0] = x[0]
-	    ws.dataX(index)[1] = x[1]
-	    ws.dataX(index)[2] = x[2]
+            data = self.dataListener.data.popleft()
+	    index = 0
+	    for packet in numpy.array_split(data, 1000):
+	    	x, y, e = numpy.array_split(packet, 3)
+	    	ws.dataY(index)[0] = y[0] #is 2
+	    	ws.dataE(index)[0] = e[0]
+	    	ws.dataX(index)[0] = x[0]
+	    	ws.dataX(index)[1] = x[1]
+	    	ws.dataX(index)[2] = x[2]
+	   	index+=1
 	   # simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
 	   
 
@@ -59,8 +63,9 @@ class DataListener(PyQt4.QtCore.QObject):
         while True:
             command, index = self._receive_header()
             if command == 'data':
-                x,y,e = self.get_histogram()
-                self.data.append((index,x,y,e))
+                #index, x,y,e = self.get_histogram()
+	        data = self.get_histogram()
+                self.data.append((data))
                 self.new_data.emit()
             elif command == 'clear':
                 self.clear.emit()
@@ -75,8 +80,7 @@ class DataListener(PyQt4.QtCore.QObject):
 
     def get_histogram(self):
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)
-        x, y, e = numpy.array_split(data, 3)
-        return x, y, e
+	return data	
 
     def _receive_header(self):
         header = self.socket.recv_json()
