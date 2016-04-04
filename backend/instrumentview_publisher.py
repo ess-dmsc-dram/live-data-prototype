@@ -44,8 +44,14 @@ class InstrumentViewPublisher(Controllable):
 	currentws = simpleapi.CloneWorkspace(self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data)
 	for i in range(currentws.getNumberHistograms()):
             seriesX = currentws.readX(i)
+   	    print "this is seriesX"
+	    print seriesX
 	    seriesY = currentws.readY(i)
+	    print "this is seriesY"
+            print seriesY
 	    seriesE = currentws.readE(i)
+            print "this is seriesE"
+            print seriesE
 	    packet = numpy.concatenate((seriesX, seriesY, seriesE))
 	    header = self._create_header('data', i) 
             self.socket.send_json(header, flags=zmq.SNDMORE)

@@ -18,7 +18,7 @@ class InstrumentView(object):
 	ws = simpleapi.WorkspaceFactory.Instance().create("Workspace2D", self._number_of_spectra, 2, 1)
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
 	simpleapi.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
-	ws = simpleapi.Rebin(ws, "0,0.5,1.5")
+	ws = simpleapi.Rebin(ws, "0,5,10")
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws.getAxis(0).setUnit('tof')
 	
@@ -28,19 +28,21 @@ class InstrumentView(object):
 
     def clear(self):
         ws = simpleapi.AnalysisDataService['POWDIFF_test']
-	
+	#could either delete workspace and go through the __init__ again or clear the data individually?	
 
     def updateInstrumentView(self):
-	#pass
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
+	#simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         while self.dataListener.data:
             index, x, y, e = self.dataListener.data.popleft()
-	    ws.dataY(index)[1] = y #is 2
-	    ws.dataE(index)[1] = e
+	    ws.dataY(index)[0] = y[0] #is 2
+	    ws.dataE(index)[0] = e[0]
 	    ws.dataX(index)[0] = x[0]
-	    ws.dataX(index)[2] = x[1]
+	    ws.dataX(index)[1] = x[1]
+	    ws.dataX(index)[2] = x[2]
+	   # simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
 	   
-	    	
+
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()
     new_data = PyQt4.QtCore.pyqtSignal()
