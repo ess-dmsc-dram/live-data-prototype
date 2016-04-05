@@ -28,9 +28,9 @@ mpirun -n <N> python run_backend_reducer.py
 ```
 where `<N>` is the desired number of MPI ranks. It *must* match the number of ranks used for the backend-live-listener.
 
-**Visualizer:**
+**Instrument View Visualizer:**
 ```sh
-python run_visualizer.py
+python run_instrumentvisualizer.py
 ```
 
 In all four cases the run script supports the option `-h` to print help, and further options, as described in the respective help. In particular, in several cases you can set the log level with `-l` and the host with `-H` (which defaults to localhost).
