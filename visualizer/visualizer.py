@@ -7,6 +7,8 @@ import mantid.simpleapi as simpleapi
 import mantidqtpython as mpy
 import random
 from logger import log
+import pyqtgraph as pg
+from pyqtgraph.Qt import QtCore
 ConfigService = simpleapi.ConfigService
 
 
@@ -38,14 +40,33 @@ class InstrumentView(object):
 	    index = 0
 	    for packet in numpy.array_split(data, 1000):
 	    	x, y, e = numpy.array_split(packet, 3)
-	    	ws.dataY(index)[0] = y[0] #is 2
-	    	ws.dataE(index)[0] = e[0]
+	    	ws.dataY(index)[1] = y[0] #is 2
+	    	ws.dataE(index)[1] = e[0]
 	    	ws.dataX(index)[0] = x[0]
 	    	ws.dataX(index)[1] = x[1]
 	    	ws.dataX(index)[2] = x[2]
 	   	index+=1
-	   # simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
 	   
+class Plotter(object):
+    def __init__(self, dataListener):
+        self.dataListener = dataListener
+        self.win = pg.GraphicsWindow()
+        self.win.resize(800,350)
+        self.win.setWindowTitle('pyqtgraph example: Histogram')
+        self.plt1 = self.win.addPlot()
+        self.curves = {}
+
+    def clear(self):
+        self.curves = {}
+        self.plt1.clear()
+
+    def update(self):
+        while self.dataListener.data:
+            index,x,y = self.dataListener.data.popleft()
+            if not index in self.curves:
+                self.curves[index] = self.plt1.plot(stepMode=True, pen=(index), name=str(index))
+            self.curves[index].setData(x, y)
+        self.plt1.enableAutoRange('xy', False)
 
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()
@@ -62,10 +83,13 @@ class DataListener(PyQt4.QtCore.QObject):
         self.connect()
         while True:
             command, index = self._receive_header()
-            if command == 'data':
-                #index, x,y,e = self.get_histogram()
-	        data = self.get_histogram()
+            if command == 'instrumentData':
+	        data = numpy.frombuffer(self.socket.recv(), numpy.float64)
                 self.data.append((data))
+                self.new_data.emit()
+	    if command == 'graphData':
+		x,y = self.get_histogram()
+                self.data.append((index,x,y))
                 self.new_data.emit()
             elif command == 'clear':
                 self.clear.emit()
@@ -80,7 +104,8 @@ class DataListener(PyQt4.QtCore.QObject):
 
     def get_histogram(self):
         data = numpy.frombuffer(self.socket.recv(), numpy.float64)
-	return data	
+        x,y = numpy.array_split(data, 2)
+        return x,y	
 
     def _receive_header(self):
         header = self.socket.recv_json()

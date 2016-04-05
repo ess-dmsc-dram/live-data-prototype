@@ -47,7 +47,7 @@ class ResultPublisher(Controllable):
     def _publish(self, index):
         boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[index].data
         packet = numpy.concatenate((boundaries, values))
-        header = self._create_header('data', index)
+        header = self._create_header('graphData', index)
         self.socket.send_json(header, flags=zmq.SNDMORE)
         self.socket.send(packet)
 

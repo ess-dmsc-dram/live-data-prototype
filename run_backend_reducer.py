@@ -37,14 +37,14 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
     reducer_controller_thread.start()
 
-    #resultPublisher = ResultPublisher(reducer)
-    #resultPublisher_thread = threading.Thread(target=resultPublisher.run)
-    #resultPublisher_thread.start()
+    resultPublisher = ResultPublisher(reducer)
+    resultPublisher_thread = threading.Thread(target=resultPublisher.run)
+    resultPublisher_thread.start()
     instrumentViewPublisher = InstrumentViewPublisher(reducer)
     instrumentViewPublisher_thread = threading.Thread(target=instrumentViewPublisher.run)
     instrumentViewPublisher_thread.start()
     parameterController = ParameterControlServer(controllees=[instrumentViewPublisher], port=ports.result_publisher_control)
-   #parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
+    parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()
 

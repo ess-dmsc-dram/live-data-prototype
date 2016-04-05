@@ -40,9 +40,7 @@ class InstrumentViewPublisher(Controllable):
         self.socket.send_json(header)
 
     def _publish(self):
-	#TODO send all data for currentws in one go cos latency etc
 	currentws = simpleapi.CloneWorkspace(self.eventListener._rebin_for_instrumentview_transition.get_checkpoint().data)
-	#concatPacket = numpy.empty([1000,3]) #it IS 1000 length, make this improvement later
 	concatPacket = []
 	concatIndex = [] 
 	for i in range(currentws.getNumberHistograms()):
@@ -51,9 +49,7 @@ class InstrumentViewPublisher(Controllable):
 	    seriesE = currentws.readE(i)
 	    packet = numpy.concatenate((seriesX, seriesY, seriesE)) #and index?
 	    concatPacket= numpy.concatenate((concatPacket, packet))
-	    #concatIndex.append(i)
-	    #concatPacket.append(packet)
-	header = self._create_header('data', 1) 
+	header = self._create_header('instrumentData', 1) 
        	self.socket.send_json(header, flags=zmq.SNDMORE)
         self.socket.send(concatPacket)
 
