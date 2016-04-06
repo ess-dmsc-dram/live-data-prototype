@@ -1,39 +1,34 @@
 import time
 import numpy
 import zmq
-
+import mantid.simpleapi as simpleapi
 from logger import log
 import ports
 from controllable import Controllable
 
 
-class ResultPublisher(Controllable):
+class SpectraViewPublisher(Controllable):
     def __init__(self, eventListener):
-        super(ResultPublisher, self).__init__(type(self).__name__)
+        super(SpectraViewPublisher, self).__init__(type(self).__name__)
         self.eventListener = eventListener
         self._update_rate = 1.0
         self.socket = None
         self._last_count = 0
 
     def run(self):
-        log.info("Starting ResultPublisher")
+        log.info("Starting SpectraViewPublisher")
         self.connect()
 
         self._publish_clear()
         while True:
-            count = len(self.eventListener._gather_histogram_transition.get_checkpoint())
-            if count != self._last_count:
-                self._publish_clear()
-                self._last_count = count
-            for i in range(count):
-                if self.eventListener._gather_histogram_transition.get_checkpoint()[i]:
-                    self._publish(i)
+            if self.eventListener._create_workspace_from_events_transition.get_checkpoint():
+                self._publish()
             time.sleep(self.update_rate)
 
     def connect(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.PUB)
-        uri = 'tcp://*:{0:d}'.format(ports.result_stream)
+        uri = 'tcp://*:{0:d}'.format(ports.spectra_result_stream)
         self.socket.bind(uri)
         log.info('Bound to ' + uri)
 
@@ -44,13 +39,14 @@ class ResultPublisher(Controllable):
         header = self._create_header('clear', None)
         self.socket.send_json(header)
 
-    def _publish(self, index):
-        boundaries, values = self.eventListener._gather_histogram_transition.get_checkpoint()[index].data
-        packet = numpy.concatenate((boundaries, values))
-#	print "this boundaries " +str(boundaries)
-        header = self._create_header('graphData', index)
-        self.socket.send_json(header, flags=zmq.SNDMORE)
-        self.socket.send(packet)
+    def _publish(self):
+	x, y = self.eventListener._gather_spectra_transition.get_checkpoint().data
+	index =  self.eventListener._gather_spectra_transition._spectra_id
+	packet = numpy.concatenate((x, y))
+	print y
+	header = self._create_header('spectraData', index)
+	self.socket.send_json(header, flags=zmq.SNDMORE)
+	self.socket.send(packet)	
 
     def get_parameter_dict(self):
         return {'update_rate':'float'}

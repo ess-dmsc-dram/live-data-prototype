@@ -13,6 +13,7 @@ from reductions_transition import ReductionTransition
 from mantid_filter_transition import MantidFilterTransition
 from mantid_rebin_transition import MantidRebinTransition
 from gather_histogram_transition import GatherHistogramTransition
+from gather_spectra_transition import GatherSpectraTransition
 
 
 class BackendMantidReducer(BackendWorker):
@@ -32,6 +33,8 @@ class BackendMantidReducer(BackendWorker):
         self._gather_histogram_transition.accumulate_data = True
 	self._rebin_for_instrumentview_transition = MantidRebinTransition(self._create_workspace_from_events_transition)  
 	self._rebin_for_instrumentview_transition.set_bin_parameters('0,5,10') #set to single bin
+	self._gather_spectra_transition = GatherSpectraTransition(self._create_workspace_from_events_transition)
+	#at this point set up what spectra index you want etc	
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])

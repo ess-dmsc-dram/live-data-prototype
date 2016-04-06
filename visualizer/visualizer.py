@@ -68,6 +68,33 @@ class Plotter(object):
             self.curves[index].setData(x, y)
         self.plt1.enableAutoRange('xy', False)
 
+class SpectraPlotter(object):
+    def __init__(self, dataListener):
+        self.dataListener = dataListener
+        self.win = pg.GraphicsWindow()
+        self.win.resize(800,350)
+        self.win.setWindowTitle('Spectra for dectector')
+        self.plt1 = self.win.addPlot()
+        self.curves = {}
+	self.old_index = None
+	self.firstData = True
+
+    def clear(self):
+        self.curves = {}
+        self.plt1.clear()
+
+    def update(self):
+        while self.dataListener.data:
+            index,x,y = self.dataListener.data.popleft()
+	    if not self.firstData: #feels weird fast updating at the moment... maybe it can not update as much
+	    	self.plt1.removeItem(self.curves[1])
+	    self.firstData = False
+	    self.win.setWindowTitle('Spectra for detector ' + str(index))
+	    y2 = numpy.append(y, [0]) #check best way to make y match x len
+	    self.curves[1] = self.plt1.plot(x, y2)#stepMode=True, pen=(index), name=str(index))
+            self.plt1.enableAutoRange('xy', True)
+
+
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()
     new_data = PyQt4.QtCore.pyqtSignal()
@@ -91,6 +118,10 @@ class DataListener(PyQt4.QtCore.QObject):
 		x,y = self.get_histogram()
                 self.data.append((index,x,y))
                 self.new_data.emit()
+	    if command == 'spectraData':
+		x, y = self.get_histogram()
+		self.data.append((index,x,y))
+		self.new_data.emit()
             elif command == 'clear':
                 self.clear.emit()
 
