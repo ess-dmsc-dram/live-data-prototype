@@ -21,5 +21,9 @@ class GatherSpectraTransition(Transition):
         #    bin_values = sum(gathered)
         return x, y, index
 
+    def set_spectra_id(self, spectra_id):
+        self._spectra_id = spectra_id
+        self.trigger_rerun()
+
     def _create_checkpoint(self):
         return HistogramCheckpoint()

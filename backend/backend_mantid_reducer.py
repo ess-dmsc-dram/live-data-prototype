@@ -34,7 +34,7 @@ class BackendMantidReducer(BackendWorker):
 	self._rebin_for_instrumentview_transition = MantidRebinTransition(self._create_workspace_from_events_transition)  
 	self._rebin_for_instrumentview_transition.set_bin_parameters('0,5,10') #set to single bin
 	self._gather_spectra_transition = GatherSpectraTransition(self._create_workspace_from_events_transition)
-	#at this point set up what spectra index you want etc	
+	self._gather_spectra_transition.set_spectra_id('1')	
 
     def _process_command(self, command):
         setattr(self, command[0], command[1])
@@ -81,8 +81,11 @@ class BackendMantidReducer(BackendWorker):
     def get_bin_values(self):
         return self._rebin_transition.get_checkpoint()[-1].data.readY(0)
 
+    def get_spectra_id(self):
+	return self._gather_spectra_transition._spectra_id
+
     def get_parameter_dict(self):
-        return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool'}
+        return {'bin_parameters':'str', 'filter_interval_parameters':'str', 'filter_pulses':'bool', 'spectra_id':'str'}
 
     @property
     def bin_parameters(self):
@@ -93,6 +96,16 @@ class BackendMantidReducer(BackendWorker):
         self._lock.acquire()
         self._rebin_transition.set_bin_parameters(parameters)
         self._lock.release()
+
+    @property
+    def spectra_id(self):
+  	return self._gather_spectra_transition._spectra_id
+
+    @spectra_id.setter
+    def spectra_id(self, spectra):
+	self._lock.acquire()
+	self._gather_spectra_transition.set_spectra_id(spectra)
+	self._lock.release()
 
     @property
     def filter_pulses(self):
