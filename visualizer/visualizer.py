@@ -14,6 +14,7 @@ ConfigService = simpleapi.ConfigService
 
 class InstrumentView(object):
     def __init__(self, dataListener):
+	
         self.dataListener = dataListener
 	ws = simpleapi.CreateSimulationWorkspace(Instrument='data/POWDIFF_Definition.xml', BinParams='1,0.5,2')
 	self._number_of_spectra = ws.getNumberHistograms()
@@ -27,12 +28,19 @@ class InstrumentView(object):
 	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
         self.iw = InstrumentWidget('POWDIFF_test')
         self.iw.show()
+#	pickTab = self.iw.getTab(InstrumentWindow.PICK)
+	#self.connect(pickTab, SIGNAL("pickTab.wsIndexChanged(int)"),self.getNewIndex())
 
+    def getNewIndex():
+	print "got new index"
+
+ 
     def clear(self):
         ws = simpleapi.AnalysisDataService['POWDIFF_test']
 	#could either delete workspace and go through the __init__ again or clear the data individually?	
 
     def updateInstrumentView(self):
+	#receive signal that it has updated here, then print out new number?
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         while self.dataListener.data:
@@ -98,6 +106,7 @@ class SpectraPlotter(object):
 class DataListener(PyQt4.QtCore.QObject):
     clear = PyQt4.QtCore.pyqtSignal()
     new_data = PyQt4.QtCore.pyqtSignal()
+    
 
     def __init__(self, host, port):
         PyQt4.QtCore.QObject.__init__(self)

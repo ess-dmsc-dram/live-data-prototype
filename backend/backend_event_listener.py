@@ -57,12 +57,17 @@ class BackendEventListener(BackendWorker):
             if what == 'meta_data':
                 split = [data] * self._comm.size
             else:
+		#split = distribute_stream_split(self._comm.size, data)
                 split = []
                 for i in range(self._comm.size):
                     split.append([])
-                for i in data:
-                    detector_id = int(i[0])
+                for i in data: #make this into a separate function to be used by here and spectra_transition    
+                    detector_id = int(i[0]) 
+		    #print "this is detector ID"
+		    #print detector_id
                     target = detector_id % self._comm.size
+		    #print "whatever i is:"
+		    #print i
                     split[target].append(i)
         else:
             split = None
@@ -72,3 +77,13 @@ class BackendEventListener(BackendWorker):
             return what, data
         else:
             return what, numpy.array(data)
+
+#distribute_stream_split(comm_size, data):
+#   split = []
+#    for i in range(comm.size):
+#   	split.append([])
+#    for i in data: 
+#     	detector_id = int(i[0])
+#      	target = detector_id % comm.size
+#      	split[target].append(i)
+

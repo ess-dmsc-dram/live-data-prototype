@@ -16,9 +16,10 @@ class GatherSpectraTransition(Transition):
         data = data[0].data
         x = data.readX(index)
         y = data.readY(index)
-        #gathered = self._comm.gather(bin_values, root=0)
-        #if self._comm.Get_rank() == 0:
-        #    bin_values = sum(gathered)
+	#if self._comm.Get_rank() == 0: #assuming rootrank
+	#    self._comm.recv(index, source=MPI.ANY_SOURCE) #wants to receive the x,y data (and index?)
+	#else:
+	#    self._comm.send(index, dest=0) #if it is the rank with the readX/Y data, it wants to send it to the root rank
         return x, y, index
 
     def set_spectra_id(self, spectra_id):
