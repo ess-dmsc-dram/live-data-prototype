@@ -43,7 +43,6 @@ class SpectraViewPublisher(Controllable):
 	x, y = self.eventListener._gather_spectra_transition.get_checkpoint().data
 	index =  self.eventListener._gather_spectra_transition._spectra_id
 	packet = numpy.concatenate((x, y))
-	print y
 	header = self._create_header('spectraData', index)
 	self.socket.send_json(header, flags=zmq.SNDMORE)
 	self.socket.send(packet)	

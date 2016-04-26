@@ -63,11 +63,7 @@ class BackendEventListener(BackendWorker):
                     split.append([])
                 for i in data: #make this into a separate function to be used by here and spectra_transition    
                     detector_id = int(i[0]) 
-		    #print "this is detector ID"
-		    #print detector_id
-                    target = detector_id % self._comm.size
-		    #print "whatever i is:"
-		    #print i
+                    target = detector_id % self._comm.size #comm.size is number of processes, will be same in all ranks
                     split[target].append(i)
         else:
             split = None
