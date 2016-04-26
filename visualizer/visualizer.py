@@ -1,4 +1,6 @@
 from collections import deque
+from parameter_control_client import ParameterControlClient
+from general_parameter_controller import GeneralParameterController
 import zmq
 import sys
 import numpy
@@ -24,16 +26,20 @@ class InstrumentView(object):
 	ws = simpleapi.Rebin(ws, "0,5,10")
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
         ws.getAxis(0).setUnit('tof')
+	control_client = ParameterControlClient("localhost", 10005)
+	self.controller = GeneralParameterController(control_client)
+
 	
 	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
         self.iw = InstrumentWidget('POWDIFF_test')
         self.iw.show()
-#	pickTab = self.iw.getTab(InstrumentWindow.PICK)
-	#self.connect(pickTab, SIGNAL("pickTab.wsIndexChanged(int)"),self.getNewIndex())
+	self.pickTab = self.iw.getTab("Pick")
+	self.pickTab.__class__ = mpy.MantidQt.MantidWidgets.InstrumentWidgetPickTab
+	dir(self.pickTab)
 
-    def getNewIndex():
-	print "got new index"
-
+    def updateDetectorID(self):
+	self.controller.set_parameter_value('BackendMantidReducer', 'spectra_id', self.pickTab.get_currentPickID())
+	#update this to be -1 and therefore null when mouse off spectragraph?
  
     def clear(self):
         ws = simpleapi.AnalysisDataService['POWDIFF_test']
@@ -43,6 +49,7 @@ class InstrumentView(object):
 	#receive signal that it has updated here, then print out new number?
 	ws = simpleapi.AnalysisDataService['POWDIFF_test']
 	simpleapi.AnalysisDataService.Instance().addOrReplace('POWDIFF_test', ws)
+	self.updateDetectorID()
         while self.dataListener.data:
             data = self.dataListener.data.popleft()
 	    index = 0
@@ -54,6 +61,7 @@ class InstrumentView(object):
 	    	ws.dataX(index)[1] = x[1]
 	    	ws.dataX(index)[2] = x[2]
 	   	index+=1
+	    #self.updateDetectorID()
 	   
 class Plotter(object):
     def __init__(self, dataListener):
