@@ -33,13 +33,20 @@ class InstrumentView(object):
 	InstrumentWidget = mpy.MantidQt.MantidWidgets.InstrumentWidget
         self.iw = InstrumentWidget('POWDIFF_test')
         self.iw.show()
+	
 	self.pickTab = self.iw.getTab("Pick")
-	self.pickTab.__class__ = mpy.MantidQt.MantidWidgets.InstrumentWidgetPickTab
-	dir(self.pickTab)
+	self.pickTab.__class__ = mpy.MantidQt.MantidWidgets.InstrumentWidgetPickTab 
+	#while getTab does return an InstrumentWidgetPickTab class object, python assumes it is still just an InstrumentWidget object until it is specifically cast
+	dir(self.pickTab) 
+	#after being cast, the class attributes have not yet been updated, calling dir() does this
+	self.pickID = self.pickTab.get_currentPickID()
 
     def updateDetectorID(self):
-	self.controller.set_parameter_value('BackendMantidReducer', 'spectra_id', self.pickTab.get_currentPickID())
+	if self.pickID != self.pickTab.get_currentPickID():
+	    self.pickID = self.pickTab.get_currentPickID()
+  	    self.controller.set_parameter_value('BackendMantidReducer', 'spectra_id', self.pickID)
 	#update this to be -1 and therefore null when mouse off spectragraph?
+	
  
     def clear(self):
         ws = simpleapi.AnalysisDataService['POWDIFF_test']

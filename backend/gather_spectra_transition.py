@@ -8,30 +8,32 @@ from histogram_checkpoint import HistogramCheckpoint
 class GatherSpectraTransition(Transition):
     def __init__(self, parent):
         self._comm = MPI.COMM_WORLD
-	self._spectra_id = '11'
+	self._spectra_id = '1' #also set as 1 in backendreducer
         super(GatherSpectraTransition, self).__init__(parents=[parent])
 
     def _do_transition(self, data):
-	#get knowledge of index required (not all processes know this?)
-	index = int(self._spectra_id)
-	print "my rank is"
-	print self._comm.Get_rank()
-	print "the index i know is"
-	print index
+	index = int(self._spectra_id) #workspaceIndex
+	#print index
+	#index = 11
+	target = index % self._comm.size #target now mpi process with det id information
+	#print target
         data = data[0].data
 	x = data.readX(index)
 	y = data.readY(index)
-#	if self._comm.Get_rank() == 0: #assuming rootrank
-#            self._comm.recv(x, source=MPI.ANY_SOURCE) #wants to receive the x,y data (and index?)
-#        else:
-#	    try:
-#		print "got here!"
-#	    	x = data.readX(index)
-#	    	y = data.readY(index)
-#	    	self._comm.send(x)
-#	    except:
-#	    	pass	
-#        
+	if target is not 0: #to avoid the target being 0 and then requesting information for itself, which when using blocking sends and recieves would hang the program
+	    if self._comm.Get_rank() == target:
+		self._comm.send(x, dest = 0)
+		self._comm.send(y, dest = 0)
+	    if self._comm.Get_rank() == 0:
+		x = self._comm.recv(source=target)
+		y = self._comm.recv(source=target)	   
+# if self._comm.Get_rank() == target: #assuming rootrank
+#  	    	request = self._comm.Isend(x, dest=0) #as request object, use wait method on it later on, can lower case this for picking any python object
+#	    	request = self._comm.Isend(y, dest=0)   
+ #           if self._comm.Get_rank() == 0:
+#	    	x = self._comm.recv(source=target)
+#	    	y = self._comm.recv(source=target)
+	
 
         return x, y, index
 #assume has knowledge of index of data

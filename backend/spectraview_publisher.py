@@ -40,7 +40,11 @@ class SpectraViewPublisher(Controllable):
         self.socket.send_json(header)
 
     def _publish(self):
-	x, y = self.eventListener._gather_spectra_transition.get_checkpoint().data
+	try:
+	    x, y = self.eventListener._gather_spectra_transition.get_checkpoint().data
+	except TypeError:
+	    time.sleep(5)
+	    x, y = self.eventListener._gather_spectra_transition.get_checkpoint().data 
 	index =  self.eventListener._gather_spectra_transition._spectra_id
 	packet = numpy.concatenate((x, y))
 	header = self._create_header('spectraData', index)
