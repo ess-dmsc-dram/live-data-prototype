@@ -3,7 +3,7 @@ from mpi4py import MPI
 import random
 from transition import Transition
 from histogram_checkpoint import HistogramCheckpoint
-
+import MPIDataSplit
 
 class GatherSpectraTransition(Transition):
     def __init__(self, parent):
@@ -13,10 +13,7 @@ class GatherSpectraTransition(Transition):
 
     def _do_transition(self, data):
 	index = int(self._spectra_id) #workspaceIndex
-	#print index
-	#index = 11
-	target = index % self._comm.size #target now mpi process with det id information
-	#print target
+	target = MPIDataSplit.determine_data_split(index, self._comm.size)
         data = data[0].data
 	x = data.readX(index)
 	y = data.readY(index)

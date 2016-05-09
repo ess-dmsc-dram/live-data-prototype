@@ -5,7 +5,7 @@ from mpi4py import MPI
 
 from logger import log
 from backend_worker import BackendWorker
-
+import MPIDataSplit 
 
 # master connectes to main event stream and distributes it to all
 # packets are put in a queue
@@ -57,14 +57,13 @@ class BackendEventListener(BackendWorker):
             if what == 'meta_data':
                 split = [data] * self._comm.size
             else:
-		#split = distribute_stream_split(self._comm.size, data)
                 split = []
                 for i in range(self._comm.size):
                     split.append([])
-                for i in data: #make this into a separate function to be used by here and spectra_transition    
+                for i in data:    
                     detector_id = int(i[0]) 
-                    target = detector_id % self._comm.size #comm.size is number of processes, will be same in all ranks
-                    split[target].append(i)
+                    target = MPIDataSplit.determine_data_split(detector_id, self._comm.size)
+		    split[target].append(i)
         else:
             split = None
         what = self._comm.scatter([what]*self._comm.size, root=0)
@@ -73,13 +72,4 @@ class BackendEventListener(BackendWorker):
             return what, data
         else:
             return what, numpy.array(data)
-
-#distribute_stream_split(comm_size, data):
-#   split = []
-#    for i in range(comm.size):
-#   	split.append([])
-#    for i in data: 
-#     	detector_id = int(i[0])
-#      	target = detector_id % comm.size
-#      	split[target].append(i)
 
