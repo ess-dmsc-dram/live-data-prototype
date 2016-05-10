@@ -1,6 +1,6 @@
 from logger import setup_global_logger
 from backend import BackendMantidReducer
-from backend import ResultPublisher
+from backend import HistogramPublisher
 from backend import InstrumentViewPublisher
 from backend import SpectraViewPublisher
 from backend import ZMQQueueServer
@@ -38,17 +38,17 @@ if MPI.COMM_WORLD.Get_rank() == 0:
     reducer_controller_thread = threading.Thread(target=reducer_controller.run)
     reducer_controller_thread.start()
 
-    resultPublisher = ResultPublisher(reducer)
-    resultPublisher_thread = threading.Thread(target=resultPublisher.run)
-    resultPublisher_thread.start()
+    histogramPublisher = HistogramPublisher(reducer)
+    histogramPublisher_thread = threading.Thread(target=histogramPublisher.run)
+    histogramPublisher_thread.start()
     instrumentViewPublisher = InstrumentViewPublisher(reducer)
     instrumentViewPublisher_thread = threading.Thread(target=instrumentViewPublisher.run)
     instrumentViewPublisher_thread.start()
     spectraViewPublisher = SpectraViewPublisher(reducer)
     spectraViewPublisher_thread = threading.Thread(target=spectraViewPublisher.run)
     spectraViewPublisher_thread.start()
-    parameterController = ParameterControlServer(controllees=[instrumentViewPublisher], port=ports.result_publisher_control)
-    parameterController = ParameterControlServer(controllees=[resultPublisher], port=ports.result_publisher_control)
+    parameterController = ParameterControlServer(controllees=[instrumentViewPublisher], port=ports.histogram_publisher_control)
+    parameterController = ParameterControlServer(controllees=[histogramPublisher], port=ports.histogram_publisher_control)
     parameterController_thread = threading.Thread(target=parameterController.run)
     parameterController_thread.start()
 
