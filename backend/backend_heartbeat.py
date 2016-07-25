@@ -41,21 +41,16 @@ class BackendHeartbeat(object):
     def _broadcast_and_unpack(self, header, command=None):
         self._comm.Bcast([header, 64, MPI.BYTE], root=self._root)
         packet_type, payload_length, payload = self._unpack_header(header)
-        if packet_type == 0:
-            return 0, None
-        if packet_type == 2:
-            payload = json.loads(payload)
         # Note: mpi4py lower-case deals with things under the hood,
         # probably at the cost of speed, but long command should be rare.
         if payload_length > 48:
             payload = self._comm.bcast(command)
+        if payload_length > 0:
+            if packet_type == 1:
+                return packet_type, payload
             if packet_type == 2:
-                payload = json.loads(payload)
-            return packet_type, payload
-        elif payload_length > 0:
-            return packet_type, payload
-        else:
-            return packet_type, None
+                return packet_type, json.loads(payload)
+        return packet_type, None
 
     def _create_idle_header(self):
         # 0 = idle
