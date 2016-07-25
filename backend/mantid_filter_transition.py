@@ -9,9 +9,9 @@ from mantid_workspace_transition import MantidWorkspaceTransition
 class MantidFilterTransition(MantidWorkspaceTransition):
     def __init__(self, parent):
         self._value_name = 'lattice_spacing'
-        self._value_min = 5.4
-        self._value_max = 5.5
-        self._value_step = 0.01
+        self._value_min = 1.0
+        self._value_max = 10.0
+        self._value_step = 1.0
         super(MantidFilterTransition, self).__init__(parents=[parent])
 
     def set_interval_parameters(self, interval_parameters):
