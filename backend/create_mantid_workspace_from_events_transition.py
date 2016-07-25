@@ -30,7 +30,7 @@ class CreateMantidWorkspaceFromEventsTransition(MantidWorkspaceTransition):
         mantid.LoadInstrument(Workspace=ws, Filename='data/POWDIFF_Definition.xml', RewriteSpectraMap=True)
         ws.getAxis(0).setUnit('tof')
         for i in event_data:
-            ws.getEventList(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(pulse_time))
+            ws.getSpectrum(int(i[0])).addEventQuickly(float(i[1]), DateAndTime(pulse_time))
         self._add_log_data(ws, pulse_time)
         return ws
 
