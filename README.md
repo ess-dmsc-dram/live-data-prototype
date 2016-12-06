@@ -28,8 +28,9 @@ mpirun -n <N> python run_backend_reducer.py
 ```
 where `<N>` is the desired number of MPI ranks. It *must* match the number of ranks used for the backend-live-listener.
 
-**Visualizer:**
+**Visualizers for instrumentview and histogram:**
 ```sh
+python run_instrumentvisualizer.py
 python run_visualizer.py
 ```
 

@@ -5,7 +5,7 @@ from mpi4py import MPI
 
 from logger import log
 from backend_worker import BackendWorker
-
+import MPIDataSplit 
 
 # master connectes to main event stream and distributes it to all
 # packets are put in a queue
@@ -60,10 +60,10 @@ class BackendEventListener(BackendWorker):
                 split = []
                 for i in range(self._comm.size):
                     split.append([])
-                for i in data:
-                    detector_id = int(i[0])
-                    target = detector_id % self._comm.size
-                    split[target].append(i)
+                for i in data:    
+                    detector_id = int(i[0]) 
+                    target = MPIDataSplit.determine_data_split(detector_id, self._comm.size)
+		    split[target].append(i)
         else:
             split = None
         what = self._comm.scatter([what]*self._comm.size, root=0)
@@ -72,3 +72,4 @@ class BackendEventListener(BackendWorker):
             return what, data
         else:
             return what, numpy.array(data)
+
